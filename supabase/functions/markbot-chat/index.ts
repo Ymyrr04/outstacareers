@@ -782,6 +782,14 @@ Deno.serve(async (req) => {
     const { data: isAdmin, error: aErr } = await sb.rpc("is_admin", { _user_id: userId });
     if (aErr) throw aErr;
     if (!isAdmin) return json({ error: "Admins only" }, 403);
+    const { data: isSuper } = await sb.rpc("is_super_admin", { _user_id: userId });
+    if (!isSuper) {
+      const { data: mbPerm } = await sb.from("admin_tab_permissions")
+        .select("can_view").eq("user_id", userId).eq("tab_id", "markbot").maybeSingle();
+      if (mbPerm && mbPerm.can_view === false) {
+        return json({ error: "You don't have permission to use Markbot AI. Ask a super admin to turn it on for you." }, 403);
+      }
+    }
 
     let raw: unknown;
     try { raw = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
