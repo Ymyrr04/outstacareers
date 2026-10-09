@@ -3400,6 +3400,77 @@ export type Database = {
         }
         Relationships: []
       }
+      markbot_conversations: {
+        Row: {
+          admin_user_id: string
+          context: Json | null
+          created_at: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      markbot_messages: {
+        Row: {
+          blocked: boolean | null
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          log_id: string | null
+          rating: number | null
+          role: string
+          sources: Json | null
+        }
+        Insert: {
+          blocked?: boolean | null
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          log_id?: string | null
+          rating?: number | null
+          role: string
+          sources?: Json | null
+        }
+        Update: {
+          blocked?: boolean | null
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          log_id?: string | null
+          rating?: number | null
+          role?: string
+          sources?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "markbot_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "markbot_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outreach_prospects: {
         Row: {
           about: string | null
