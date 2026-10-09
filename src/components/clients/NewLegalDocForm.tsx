@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,7 +24,6 @@ export const NewLegalDocForm: React.FC<Props> = ({ onCancel, onCreated }) => {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Option | null>(null);
   const [types, setTypes] = useState<string[]>([]);
-  const [reason, setReason] = useState('Requested via WhatsApp');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -64,7 +62,7 @@ export const NewLegalDocForm: React.FC<Props> = ({ onCancel, onCreated }) => {
       .insert({
         contractor_assignment_id: selected.id,
         doc_types: types,
-        reason: reason.trim() || 'Created by admin',
+        reason: 'Created by admin',
         status: 'In Progress',
       })
       .select('id')
@@ -116,11 +114,6 @@ export const NewLegalDocForm: React.FC<Props> = ({ onCancel, onCreated }) => {
             </label>
           ))}
         </div>
-      </div>
-
-      <div className="space-y-1">
-        <Label className="text-xs">Reason</Label>
-        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} className="text-xs" />
       </div>
 
       <div className="flex justify-end gap-2">

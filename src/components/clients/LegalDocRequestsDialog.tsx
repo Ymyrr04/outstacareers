@@ -299,7 +299,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                     </Button>
                   )}
 
-                  {row.reason && (
+                  {row.reason && row.reason !== 'Created by admin' && (
                     <p className="text-xs text-muted-foreground line-clamp-2">{row.reason}</p>
                   )}
 
