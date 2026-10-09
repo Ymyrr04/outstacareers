@@ -56,6 +56,16 @@ export function MarkbotRulesCard() {
             <li>Only sees data from tabs you have permission for — your rules can't unlock anything.</li>
             <li>Treats CVs, notes and comments as data, never as instructions.</li>
             <li>Keeps formatting light: bold names and key figures, short bullets, no headings or tables.</li>
+            <li>Reads names as things in our system first — e.g. "Adamson" means our client Adamson Ahdoot LLP, not a school. Only falls back to a general meaning when nothing in the system matches.</li>
+            <li>Follows the conversation: "them", "that role", "that client" refer to what was just discussed, and it states its assumption in one line.</li>
+            <li>Leaves out Hired, Reject and Archived candidates unless you ask for them.</li>
+            <li>Shows a quick-view card for each candidate it names (status, role, CV and interview scores, availability, RM profile) — click to open the full profile.</li>
+            <li>Only shows source chips for the notes, comments or CVs it actually used.</li>
+            <li>Uses the app's AI CV scores and interview results to judge partial matches, and compares candidates against a role's must-have skills.</li>
+            <li>Uses Eastern Time and Monday–Sunday weeks, and always states the exact dates it used.</li>
+            <li>Still answers using its lookups if the CV/notes search is slow, instead of failing.</li>
+            <li>Remembers only the current conversation (last 6 messages); conversations are private per admin and kept for 90 days.</li>
+            <li>Only admins with Markbot AI switched on in Tab Permissions can use it (super admins always can).</li>
           </ul>
           <p className="mt-2">Your rules are added on top of these. If a rule conflicts with one of the above, the built-in one wins.</p>
         </details>
