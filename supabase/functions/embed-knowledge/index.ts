@@ -1,6 +1,7 @@
 // Turns queued knowledge_dirty_queue rows into embedded knowledge_chunks.
 // Internal job: requires x-internal-secret === KNOWLEDGE_JOB_SECRET.
-import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { authorName } from "./authors.ts";
 
@@ -132,7 +133,7 @@ const stripHtml = (s: string) =>
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
     .replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 
-export function chunkText(text: string): string[] {
+function chunkText(text: string): string[] {
   const paras = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   // Hard-split any paragraph that is too long on its own.
   const pieces: string[] = [];
