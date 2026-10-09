@@ -66,6 +66,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
 import { useTabPermissions, TabId } from '@/hooks/useTabPermissions';
 import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
+import { MarkbotIndexCard } from '@/components/MarkbotIndexCard';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
@@ -250,7 +251,7 @@ const getJobIconTint = (title: string, department?: string | null): string => {
 };
 
 const Admin = () => {
-  const { user, isAdmin, loading, signOut } = useAuth();
+  const { user, isAdmin, isSuperAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { tab: urlTab } = useParams<{ tab?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -4191,6 +4192,7 @@ const Admin = () => {
               </div>
             </div>
             <AdminPermissionsManager />
+            {isSuperAdmin && <MarkbotIndexCard />}
           </TabsContent>
         </Tabs>
       </main>
