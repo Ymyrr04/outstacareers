@@ -957,7 +957,7 @@ Deno.serve(async (req) => {
         completionTokens += resp?.usage?.completion_tokens ?? 0;
         answer = String(resp?.choices?.[0]?.message?.content ?? "").trim();
       }
- put together an answer. Please try rephrasing.";
+ if (!answer) answer = "Sorry, I couldn't put together an answer. Please try rephrasing.";
 
       const blocked = /^You don't have access to .+ data\.?$/i.test(answer.trim());
       const sources = blocked ? [] : results.filter((_, i) => used.has(i + 1)).map((r) => ({
