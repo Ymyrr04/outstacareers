@@ -709,6 +709,8 @@ function systemPrompt(allowed: string[], restricted: string[], ctx?: ConvContext
     : "";
   return `You are Markbot AI, the internal assistant for the OutSta admin team. Think like an experienced recruitment operations colleague: understand what the person is really trying to get done, use your tools proactively (several in a row if needed), reason over the results, and give a clear, useful answer. Be friendly and plain-spoken; be concise for simple questions and thorough for analysis.
 
+You work inside OutSta's ATS. Always interpret names and terms as things in this system first: a proper name is most likely one of our clients, jobs, hiring requests, candidates or admins. "From <name>", "for <name>", "at <name>" usually means a client (e.g. candidates pitched to, linked to, or working for that client). If a "Possible system matches" note lists a client, treat the name as that client and look it up with your tools (e.g. candidate_status for each candidate in context to see linked hiring requests and active assignments, or get_role_requirements / pipeline_summary for the client). When a client matches, answer ONLY in client terms — do not also list schools, cities or CV employers with that name. When the question says "them", "among them", "those" etc., answer only about the people from the previous answer: check each one (candidate_status) for links to that client, and say plainly which are and aren't linked. Only fall back to a general meaning (a school, a city, a former employer in a CV) when nothing in the system matches, and say so in one line.
+
 How to work:
 - Before answering, decide which tools would help and call them; don't stop after one tool if another would give a better answer. Never say you "don't have that functionality" when one of your tools covers it — use it. If something truly isn't possible, say what you can do instead.
 - When the user pushes back or refines ("also check X", "it doesn't have to match exactly"), adjust the search and try again rather than repeating the previous answer.
@@ -765,6 +767,20 @@ Role requirements (get_role_requirements tool):
 - If both a job and a hiring request match, use both and say which each requirement came from.
 - If nothing matches, say so and ask which role is meant.` : ""}`;
 }
+
+// Flag words in the question that match client names, so the model reads them as system entities.
+async function systemMatchesNote(sb: any, text: string): Promise<string> {
+  try {
+    const words = [...new Set((text.toLowerCase().match(/[a-z][a-z0-9&'-]{3,}/g) ?? []))]
+      .filter((w) => !STOPWORDS.has(w)).slice(0, 12);
+    if (!words.length) return "";
+    const { data } = await sb.from("clients").select("company_name")
+      .or(words.map((w) => `company_name.ilike."%${w.replace(/["%,()]/g, "")}%"`).join(",")).limit(8);
+    const names = (data ?? []).map((c: any) => c.company_name).filter(Boolean);
+    return names.length ? `\n\nPossible system matches in this question (clients): ${names.join("; ")}.` : "";
+  } catch { return ""; }
+}
+const STOPWORDS = new Set(["among","them","they","from","with","what","which","who","whom","have","that","this","those","these","there","their","about","give","show","list","candidates","candidate","client","clients","role","roles","pipeline","available","bench","talent","pool","week","today","please","does","were","been","into","more","most","than","only","also","some","need","want","find","check","each","many","much","when","where","will","would","could","should","profile","profiles","hired","status","notes","note"]);
 
 type CandidateCard = {
   id: string; name: string; job_title: string | null; status: string | null;
@@ -925,7 +941,7 @@ Deno.serve(async (req) => {
         : "";
       const candidatePool = new Map<string, CandidateCard>();
       const chatMessages: any[] = [
-        { role: "system", content: systemPrompt(allowedTabs, restrictedTabs, convCtx) + rulesBlock },
+        { role: "system", content: systemPrompt(allowedTabs, restrictedTabs, convCtx) + rulesBlock + await systemMatchesNote(sb, question.content) },
         ...recent.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
         {
           role: "user",
