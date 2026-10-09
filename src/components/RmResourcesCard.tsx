@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Upload, Trash2, Download, Loader2 } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, Loader2, ChevronDown } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -40,6 +40,14 @@ export function RmResourcesCard() {
   const [busy, setBusy] = useState(false);
   const [toDelete, setToDelete] = useState<Resource | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [expanded, setExpanded] = useState(() => {
+    try { return localStorage.getItem('rm-resources-open') !== '0'; } catch { return true; }
+  });
+
+  const toggle = () => setExpanded((v) => {
+    try { localStorage.setItem('rm-resources-open', v ? '0' : '1'); } catch { /* ignore */ }
+    return !v;
+  });
 
   const load = async () => {
     const { data, error } = await supabase.from('rm_resources')
@@ -75,7 +83,7 @@ export function RmResourcesCard() {
     load();
   };
 
-  const open = async (r: Resource) => {
+  const openFile = async (r: Resource) => {
     if (!r.file_path) return;
     const { data, error } = await supabase.storage.from('rm-resources').createSignedUrl(r.file_path, 300);
     if (error) return toast({ title: 'Could not open file', description: error.message, variant: 'destructive' });
@@ -95,35 +103,48 @@ export function RmResourcesCard() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
-        <div>
-          <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> RM Resources</CardTitle>
-          <CardDescription>Shared guides for recruitment managers. Every admin can open them, and Markbot uses them when answering.</CardDescription>
-        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={expanded}
+          className="flex min-w-0 flex-1 items-start gap-2 text-left"
+        >
+          <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? '' : '-rotate-90'}`} />
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" /> RM Resources
+              {!expanded && <span className="text-xs font-normal text-muted-foreground">({items.length})</span>}
+            </CardTitle>
+            <CardDescription>Shared guides for recruitment managers. Every admin can open them, and Markbot uses them when answering.</CardDescription>
+          </div>
+        </button>
         <Button onClick={() => input.current?.click()} disabled={busy}>
           {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />} Upload
         </Button>
         <input ref={input} type="file" multiple accept=".pdf,.docx,.txt,.md,.csv" className="hidden" onChange={(e) => onFiles(e.target.files)} />
       </CardHeader>
-      <CardContent>
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No resources yet. Upload PDF, Word (.docx) or text files. For Google Docs, use File → Download → PDF or Word.</p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {items.map((r) => (
-              <li key={r.id} className="flex items-center justify-between py-2 gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{r.title}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · {r.content_text.length.toLocaleString()} characters read</p>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button size="icon" variant="ghost" onClick={() => open(r)} aria-label="Open"><Download className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => setToDelete(r)} aria-label="Delete"><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
+      {expanded && (
+        <CardContent>
+          {items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No resources yet. Upload PDF, Word (.docx) or text files. For Google Docs, use File → Download → PDF or Word.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {items.map((r) => (
+                <li key={r.id} className="flex items-center justify-between py-2 gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{r.title}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · {r.content_text.length.toLocaleString()} characters read</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" onClick={() => openFile(r)} aria-label="Open"><Download className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setToDelete(r)} aria-label="Delete"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      )}
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
