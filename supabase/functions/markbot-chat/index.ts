@@ -523,6 +523,7 @@ Tool numbers:
 - Always state which week or filter the numbers are for.${allowed.includes("applicants") ? `
 
 Finding candidates (find_candidates tool):
+- Call find_candidates directly; don't ask the user to pick statuses first. Use query for skills, experience or anything descriptive (e.g. "QuickBooks cleanup"); use role_keywords only for short role names (e.g. bookkeeper, paralegal), and you may set both.
 - Map words to exact status values before calling: "bench" = Bench; "talent pool" = Talent Pool (add Cold Talent Pool only if they say cold or all talent pool); "qualified" = Qualified; "hired" = Hired. Say which status values you used.
 - Quote the total exactly and say which filters were applied.
 - Say how many of the listed candidates have an RM profile.
