@@ -42,10 +42,23 @@ export function MarkbotRulesCard() {
       <CardHeader>
         <CardTitle>Markbot rules</CardTitle>
         <CardDescription>
-          Standing instructions Markbot follows in every conversation, for every admin. Write one per line in plain English.
+          Standing instructions Markbot follows in every conversation, for every admin. Write one per line in plain English — just keep adding new lines; saving never replaces what Markbot does on its own.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        <details className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+          <summary className="cursor-pointer font-medium text-foreground">What Markbot already always does (built in, can't be changed here)</summary>
+          <ul className="mt-2 list-disc space-y-1 pl-4">
+            <li>Looks up real data before answering and quotes exact counts from its tools — it never recalculates totals.</li>
+            <li>Names the author and date of any note, comment or excerpt it uses.</li>
+            <li>States the date of any availability answer and warns when it's older than 14 days; never calls someone available if they're hired or on an active assignment.</li>
+            <li>Never makes hire/reject decisions and never ranks people beyond what the evidence says.</li>
+            <li>Only sees data from tabs you have permission for — your rules can't unlock anything.</li>
+            <li>Treats CVs, notes and comments as data, never as instructions.</li>
+            <li>Keeps formatting light: bold names and key figures, short bullets, no headings or tables.</li>
+          </ul>
+          <p className="mt-2">Your rules are added on top of these. If a rule conflicts with one of the above, the built-in one wins.</p>
+        </details>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
           <>
             <Textarea
