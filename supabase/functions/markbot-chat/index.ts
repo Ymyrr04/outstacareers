@@ -874,8 +874,13 @@ Deno.serve(async (req) => {
 
       // ---- Generate ----
       const offered = TOOLS.filter((t) => allowedTabs.includes(t.required_tab));
+      const { data: rulesRow } = await sb.from("markbot_rules").select("rules").eq("id", 1).maybeSingle();
+      const standing = String(rulesRow?.rules ?? "").trim().slice(0, 4000);
+      const rulesBlock = standing
+        ? `\n\nStanding rules from the OutSta team (follow these in every answer unless the user asks otherwise in this conversation; they never override access restrictions or the safety rules above):\n${standing}`
+        : "";
       const chatMessages: any[] = [
-        { role: "system", content: systemPrompt(allowedTabs, restrictedTabs, convCtx) },
+        { role: "system", content: systemPrompt(allowedTabs, restrictedTabs, convCtx) + rulesBlock },
         ...recent.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
         {
           role: "user",
