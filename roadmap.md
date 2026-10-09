@@ -15,3 +15,5 @@
 - [x] Map historical uploads to the listed 13 spreadsheet columns, including optional financial fields
 - [x] Contractors table: add optional hidden-by-default columns (client rate + other hiring fields) to the column toggle
 - [x] Move Historical P&L data helpers into src/lib/historicalData.ts without changing cache keys, totals or headcount output.
+
+- [ ] RM Resources: shared file uploads for all admins, indexed into Markbot knowledge
