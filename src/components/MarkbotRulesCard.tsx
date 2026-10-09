@@ -64,7 +64,7 @@ export function MarkbotRulesCard() {
             <li>Uses the app's AI CV scores and interview results to judge partial matches, and compares candidates against a role's must-have skills.</li>
             <li>Uses Eastern Time and Monday–Sunday weeks, and always states the exact dates it used.</li>
             <li>Still answers using its lookups if the CV/notes search is slow, instead of failing.</li>
-            <li>Remembers only the current conversation (last 6 messages); conversations are private per admin and kept for 90 days.</li>
+            <li>Remembers only the current conversation (last 20 messages); conversations are private per admin and kept for 90 days.</li>
             <li>Only admins with Markbot AI switched on in Tab Permissions can use it (super admins always can).</li>
           </ul>
           <p className="mt-2">Your rules are added on top of these. If a rule conflicts with one of the above, the built-in one wins.</p>
