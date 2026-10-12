@@ -53,9 +53,13 @@ type MarkbotTool = {
   name: string;
   description: string;
   required_tab: string;
+  alt_tabs?: string[]; // any of these tabs also grants access to the tool
   parameters: Record<string, unknown>; // JSON schema for the tool arguments
   handler: (args: unknown, ctx: ToolCtx) => Promise<unknown>;
 };
+// A tool is available when its required_tab is allowed, or any of its alt_tabs is.
+const toolAllowed = (t: MarkbotTool, tabs: string[]) =>
+  tabs.includes(t.required_tab) || (t.alt_tabs ?? []).some((x) => tabs.includes(x));
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY_MS = 86_400_000;
 
