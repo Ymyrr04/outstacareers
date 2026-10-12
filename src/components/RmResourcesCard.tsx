@@ -145,6 +145,7 @@ export function RmResourcesCard() {
         </Button>
         <input ref={input} type="file" multiple accept=".pdf,.docx,.txt,.md,.csv" className="hidden" onChange={(e) => onFiles(e.target.files)} />
       </CardHeader>
+      <p className="px-6 -mt-3 pb-3 text-xs text-muted-foreground">Everyone with admin access can read these. Don't upload files with rates or personal data.</p>
       {expanded && (
         <CardContent>
           {items.length === 0 ? (
@@ -155,7 +156,7 @@ export function RmResourcesCard() {
                 <li key={r.id} className="flex items-center justify-between py-2 gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · {r.content_text.length.toLocaleString()} characters read</p>
+                    <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · {(r.char_count ?? 0).toLocaleString()} characters read</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="icon" variant="ghost" onClick={() => openFile(r)} aria-label="Open"><Download className="h-4 w-4" /></Button>
@@ -167,6 +168,18 @@ export function RmResourcesCard() {
           )}
         </CardContent>
       )}
+      <AlertDialog open={!!dupAsk} onOpenChange={(o) => { if (!o && dupAsk) { dupAsk.resolve(false); setDupAsk(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace the existing one?</AlertDialogTitle>
+            <AlertDialogDescription>A resource named "{dupAsk?.title}" already exists. Replace it with this file, or keep both as separate resources.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { dupAsk?.resolve(false); setDupAsk(null); }}>No, keep both</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { dupAsk?.resolve(true); setDupAsk(null); }}>Yes, replace</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
