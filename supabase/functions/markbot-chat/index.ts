@@ -19,6 +19,9 @@ const MAX_TOKENS = 4000;
 const MATCH_COUNT = 10;
 const CONTEXT_MESSAGES = 20;
 const MAX_TOOL_ROUNDS = 8;
+const DAILY_QUESTION_LIMIT = 150; // per admin, per Eastern Time day (counted from rag_chat_logs)
+const TOOL_TIME_BUDGET_MS = 90_000; // no new tool rounds after this; answer from gathered results
+const RETRIEVAL_QUERY_MAX_CHARS = 1000;
 
 // Same tab list and default rules as src/hooks/useTabPermissions.tsx
 const TAB_LABELS: Record<string, string> = {
@@ -1216,6 +1219,16 @@ Deno.serve(async (req) => {
       }).select("id").single();
       if (lErr) console.error("markbot-chat log insert failed:", lErr.message);
 
+      if (!conversationId) {
+        const { data: conv, error: cvErr } = await sb.from("markbot_conversations")
+          .insert({ admin_user_id: userId, title: question.content.trim().slice(0, 60) }).select("id").single();
+        if (cvErr) throw cvErr;
+        conversationId = conv.id;
+      }
+      // Save the question first (its own insert so it sorts before the answer), then the answer.
+      const { error: umErr } = await sb.from("markbot_messages")
+        .insert({ conversation_id: conversationId, role: "user", content: question.content });
+      if (umErr) throw umErr;
       const [{ error: amErr }, { error: ucErr }] = await Promise.all([
         sb.from("markbot_messages").insert({
           conversation_id: conversationId, role: "assistant", content: answer, sources, blocked, log_id: log?.id ?? null,
