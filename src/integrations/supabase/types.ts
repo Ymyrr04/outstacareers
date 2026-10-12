@@ -3805,6 +3805,7 @@ export type Database = {
       }
       rm_resources: {
         Row: {
+          char_count: number | null
           content_text: string
           created_at: string
           file_name: string | null
@@ -3815,6 +3816,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          char_count?: number | null
           content_text?: string
           created_at?: string
           file_name?: string | null
@@ -3825,6 +3827,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          char_count?: number | null
           content_text?: string
           created_at?: string
           file_name?: string | null
