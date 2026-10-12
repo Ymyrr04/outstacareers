@@ -867,7 +867,13 @@ Role requirements (get_role_requirements tool):
 - When asked for candidates for a client or role, first call get_role_requirements, then${allowed.includes("applicants") ? " call find_candidates using the must-have skills as query" : " explain the requirements (you can't search candidates for this user)"}.
 - For each candidate, say which requirements they match and which they lack, quoting the excerpts.
 - If both a job and a hiring request match, use both and say which each requirement came from.
-- If nothing matches, say so and ask which role is meant.` : ""}`;
+- If nothing matches, say so and ask which role is meant.` : ""}${allowed.includes("pl") ? `
+
+P&L analytics (pl_analytics tool):
+- Use it for any question about P&L, income, expense, gross profit, hours or contractor counts over time. It reads the same stored historical weekly rows as the P&L tabs, so quote its totals exactly and never recalculate them.
+- For year-over-year or period comparisons, call it once per year/period and compare the results side by side.
+- Income, expense and gross are after the standard fee deductions; internal OutSta rows are already excluded. Say so briefly when it matters.
+- If a year has no stored data, say so plainly instead of guessing figures.` : ""}`;
 }
 
 // Flag words in the question that match client names, so the model reads them as system entities.
