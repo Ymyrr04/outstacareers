@@ -9,7 +9,10 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-type Resource = { id: string; title: string; file_path: string | null; file_name: string | null; created_at: string; content_text: string };
+type Resource = { id: string; title: string; file_path: string | null; file_name: string | null; created_at: string; char_count: number | null };
+
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MAX_TEXT_CHARS = 500_000;
 
 async function extractText(file: File): Promise<string> {
   const name = file.name.toLowerCase();
@@ -39,6 +42,8 @@ export function RmResourcesCard() {
   const [items, setItems] = useState<Resource[]>([]);
   const [busy, setBusy] = useState(false);
   const [toDelete, setToDelete] = useState<Resource | null>(null);
+  // Pending "Replace the existing one?" question; resolve(true) = replace, false = keep both.
+  const [dupAsk, setDupAsk] = useState<{ title: string; resolve: (replace: boolean) => void } | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(() => {
     try { return localStorage.getItem('rm-resources-open') !== '0'; } catch { return true; }
@@ -51,29 +56,46 @@ export function RmResourcesCard() {
 
   const load = async () => {
     const { data, error } = await supabase.from('rm_resources')
-      .select('id, title, file_path, file_name, created_at, content_text').order('created_at', { ascending: false });
+      .select('id, title, file_path, file_name, created_at, char_count').order('created_at', { ascending: false });
     if (error) toast({ title: 'Could not load resources', description: error.message, variant: 'destructive' });
     else setItems((data ?? []) as Resource[]);
   };
   useEffect(() => { load(); }, []);
 
+  const askReplace = (title: string) => new Promise<boolean>((resolve) => setDupAsk({ title, resolve }));
+
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     setBusy(true);
     const { data: { user } } = await supabase.auth.getUser();
+    const known = [...items];
     for (const file of Array.from(files)) {
       try {
+        if (file.size > MAX_FILE_BYTES) throw new Error('This file is over 20 MB. Please upload a smaller file.');
         const text = (await extractText(file)).trim();
         if (!text) throw new Error('No readable text found (scanned images can’t be read).');
+        if (text.length > MAX_TEXT_CHARS) throw new Error(`This file has ${text.length.toLocaleString()} characters of text; the limit is 500,000. Please split it into smaller files.`);
+        const title = file.name.replace(/\.[^.]+$/, '');
+        const existing = known.find((r) => r.title.trim().toLowerCase() === title.trim().toLowerCase());
+        const replace = existing ? await askReplace(existing.title) : false;
+
         const path = `${crypto.randomUUID()}/${file.name.replace(/[^\w.\- ]/g, '_')}`;
         const up = await supabase.storage.from('rm-resources').upload(path, file, { contentType: file.type || undefined });
         if (up.error) throw up.error;
-        const { error } = await supabase.from('rm_resources').insert({
-          title: file.name.replace(/\.[^.]+$/, ''), file_path: path, file_name: file.name,
-          mime_type: file.type || null, content_text: text, uploaded_by: user?.id,
-        });
-        if (error) { await supabase.storage.from('rm-resources').remove([path]); throw error; }
-        toast({ title: `Uploaded ${file.name}`, description: 'Markbot will learn it within a few minutes.' });
+        const fields = { file_path: path, file_name: file.name, mime_type: file.type || null, content_text: text };
+        if (replace && existing) {
+          const { error } = await supabase.from('rm_resources').update(fields).eq('id', existing.id);
+          if (error) { await supabase.storage.from('rm-resources').remove([path]); throw error; }
+          if (existing.file_path) await supabase.storage.from('rm-resources').remove([existing.file_path]);
+          existing.file_path = path;
+          toast({ title: `Replaced ${existing.title}`, description: 'Markbot will learn the new version within a few minutes.' });
+        } else {
+          const { data: row, error } = await supabase.from('rm_resources')
+            .insert({ title, ...fields, uploaded_by: user?.id }).select('id, title, file_path, file_name, created_at, char_count').single();
+          if (error) { await supabase.storage.from('rm-resources').remove([path]); throw error; }
+          if (row) known.push(row as Resource);
+          toast({ title: `Uploaded ${file.name}`, description: 'Markbot will learn it within a few minutes.' });
+        }
       } catch (e: any) {
         toast({ title: `Couldn't upload ${file.name}`, description: e.message, variant: 'destructive' });
       }
