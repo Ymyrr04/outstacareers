@@ -115,6 +115,10 @@ async function candidateStatus(args: unknown, { sb, allowedTabs }: ToolCtx) {
     : c.is_available === false ? "not_available"
     : checkedAt ? "asked_no_reply" : "never_asked";
   const a = (assignment.data ?? [])[0] as any;
+  // Fields this user may not see: tell the model they are hidden, not empty.
+  const hidden: string[] = [];
+  if (!allowedTabs.includes("pipeline")) hidden.push("linked_hiring_requests (needs Pipeline access)");
+  if (!allowedTabs.includes("clients") && !allowedTabs.includes("contractors")) hidden.push("active_assignment (needs Clients or Contractors access)");
 
   return {
     found: true,
@@ -128,6 +132,7 @@ async function candidateStatus(args: unknown, { sb, allowedTabs }: ToolCtx) {
     status_history: (history.data ?? []).map((h: any) => ({ from: h.from_status, to: h.to_status, date: h.created_at })),
     ...(allowedTabs.includes("pipeline") ? { linked_hiring_requests: hiringRequests } : {}),
     ...(allowedTabs.includes("clients") || allowedTabs.includes("contractors") ? { active_assignment: a ? { client: a.clients?.company_name ?? null, start_date: a.start_date } : null } : {}),
+    ...(hidden.length ? { hidden_fields: hidden, note: "Fields listed in hidden_fields are not visible to this user. Never say they are empty or absent — say you cannot check them." } : {}),
     latest_note_date: (note.data ?? [])[0]?.created_at ?? null,
   };
 }
