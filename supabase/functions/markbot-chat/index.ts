@@ -1025,10 +1025,10 @@ Deno.serve(async (req) => {
     const startedAt = Date.now();
 
     // ---- Per-admin daily limit (Eastern Time day) ----
-    const { count: todayCount, error: cErr } = await sb.from("rag_chat_logs")
+    const { count: todayCount, error: limitErr } = await sb.from("rag_chat_logs")
       .select("id", { count: "exact", head: true })
       .eq("admin_user_id", userId).gte("created_at", etMidnightIso(etYmd()));
-    if (cErr) throw cErr;
+    if (limitErr) throw limitErr;
     if ((todayCount ?? 0) >= DAILY_QUESTION_LIMIT) {
       return json({ error: "You've reached today's Markbot limit. It resets at midnight ET." }, 429);
     }
