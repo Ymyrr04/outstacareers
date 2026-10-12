@@ -63,7 +63,7 @@ const toolAllowed = (t: MarkbotTool, tabs: string[]) =>
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY_MS = 86_400_000;
 
-async function candidateStatus(args: unknown, { sb }: ToolCtx) {
+async function candidateStatus(args: unknown, { sb, allowedTabs }: ToolCtx) {
   const query = String((args as any)?.candidate ?? "").trim().slice(0, 200);
   if (!query) return { error: "Provide a candidate name or id." };
 
@@ -94,9 +94,9 @@ async function candidateStatus(args: unknown, { sb }: ToolCtx) {
   const [history, comments, assignment, note] = await Promise.all([
     sb.from("applicant_status_history").select("from_status, to_status, created_at")
       .eq("applicant_id", c.id).order("created_at", { ascending: false }).limit(5),
-    sb.from("hiring_request_comments").select("request_id").eq("linked_applicant_id", c.id).limit(200),
-    sb.from("contractor_assignments").select("start_date, client_id, clients(company_name)")
-      .eq("applicant_id", c.id).eq("status", "active").order("start_date", { ascending: false }).limit(1),
+    allowedTabs.includes("pipeline") ? sb.from("hiring_request_comments").select("request_id").eq("linked_applicant_id", c.id).limit(200) : Promise.resolve({ data: null, error: null } as any),
+    (allowedTabs.includes("clients") || allowedTabs.includes("contractors")) ? sb.from("contractor_assignments").select("start_date, client_id, clients(company_name)")
+      .eq("applicant_id", c.id).eq("status", "active").order("start_date", { ascending: false }).limit(1) : Promise.resolve({ data: null, error: null } as any),
     sb.from("applicant_notes").select("created_at").eq("applicant_id", c.id)
       .order("created_at", { ascending: false }).limit(1),
   ]);
@@ -104,7 +104,7 @@ async function candidateStatus(args: unknown, { sb }: ToolCtx) {
 
   const requestIds = [...new Set((comments.data ?? []).map((r: any) => r.request_id).filter(Boolean))];
   let hiringRequests: { title: string | null; stage: string | null }[] = [];
-  if (requestIds.length) {
+  if (allowedTabs.includes("pipeline") && requestIds.length) {
     const { data, error } = await sb.from("client_hiring_requests").select("job_title, pipeline_stage").in("id", requestIds);
     if (error) throw error;
     hiringRequests = (data ?? []).map((r: any) => ({ title: r.job_title, stage: r.pipeline_stage }));
@@ -126,8 +126,8 @@ async function candidateStatus(args: unknown, { sb }: ToolCtx) {
     availability_checked_at: checkedAt,
     days_since_check: checkedAt ? Math.floor((Date.now() - new Date(checkedAt).getTime()) / DAY_MS) : null,
     status_history: (history.data ?? []).map((h: any) => ({ from: h.from_status, to: h.to_status, date: h.created_at })),
-    linked_hiring_requests: hiringRequests,
-    active_assignment: a ? { client: a.clients?.company_name ?? null, start_date: a.start_date } : null,
+    ...(allowedTabs.includes("pipeline") ? { linked_hiring_requests: hiringRequests } : {}),
+    ...(allowedTabs.includes("clients") || allowedTabs.includes("contractors") ? { active_assignment: a ? { client: a.clients?.company_name ?? null, start_date: a.start_date } : null } : {}),
     latest_note_date: (note.data ?? [])[0]?.created_at ?? null,
   };
 }
@@ -1113,7 +1113,7 @@ Deno.serve(async (req) => {
         : "No excerpts were found.";
 
       // ---- Generate ----
-      const offered = TOOLS.filter((t) => allowedTabs.includes(t.required_tab));
+      const offered = TOOLS.filter((t) => toolAllowed(t, allowedTabs));
       const { data: rulesRow } = await sb.from("markbot_rules").select("rules").eq("id", 1).maybeSingle();
       const standing = String(rulesRow?.rules ?? "").trim().slice(0, 4000);
       const rulesBlock = standing
@@ -1155,7 +1155,7 @@ Deno.serve(async (req) => {
         const results = await Promise.all(calls.map(async (call) => {
           const tool = offered.find((t) => t.name === call.function?.name);
           let result: unknown;
-          if (!tool || !allowedTabs.includes(tool.required_tab)) {
+          if (!tool || !toolAllowed(tool, allowedTabs)) {
             result = { error: "Tool not available" };
             toolsUsed.push({ name: call.function?.name ?? "unknown", ok: false });
           } else {
