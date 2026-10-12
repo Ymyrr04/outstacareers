@@ -813,6 +813,7 @@ How to work:
 - When the user pushes back or refines ("also check X", "it doesn't have to match exactly"), adjust the search and try again rather than repeating the previous answer.
 - Don't make the user re-ask: if a reasonable next step is obvious (e.g. evaluating the candidates you just found), do it.
 - End with a short, practical next step when one makes sense.
+- Speed matters: request every tool call you need in the SAME turn (e.g. evaluate several candidates, or P&L for 2025 and 2026, in one batch of parallel calls). Never call tools one at a time when you already know what you need. Aim to answer within 2-3 tool turns.
 
 Team playbook (excerpts tagged "resource"):
 - Excerpts tagged (resource) come from the team's uploaded playbooks and guides. For how-to, process, methodology or "how do we..." questions (writing job descriptions, screening, interviewing, outreach, client handling), base your answer on these first and name the guide you used.
@@ -1094,7 +1095,7 @@ Deno.serve(async (req) => {
         if (!calls?.length || round === MAX_TOOL_ROUNDS) { answer = (msg?.content ?? "").trim(); break; }
 
         chatMessages.push({ role: "assistant", content: msg.content ?? "", tool_calls: calls });
-        for (const call of calls) {
+        const results = await Promise.all(calls.map(async (call) => {
           const tool = offered.find((t) => t.name === call.function?.name);
           let result: unknown;
           if (!tool || !allowedTabs.includes(tool.required_tab)) {
@@ -1113,8 +1114,9 @@ Deno.serve(async (req) => {
               toolsUsed.push({ name: tool.name, ok: false });
             }
           }
-          chatMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result).slice(0, 14000) });
-        }
+          return { role: "tool", tool_call_id: call.id, content: JSON.stringify(result).slice(0, 14000) };
+        }));
+        chatMessages.push(...results);
       }
       // Only show sources the answer actually relied on.
       let used = new Set<number>();
