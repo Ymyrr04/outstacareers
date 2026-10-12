@@ -540,7 +540,104 @@ async function getRoleRequirements(args: unknown, { sb, allowedTabs }: ToolCtx) 
   return out;
 }
 
+// P&L analytics over the stored historical weekly rows — the same data the
+// Historical/Analytics P&L tabs show. Aggregates match the report rules:
+// internal (OutSta) rows are excluded from every total, headcount counts
+// distinct non-internal contractor names, and hours prefer actual_hours.
+async function plAnalytics(args: unknown, { sb }: ToolCtx) {
+  const a = (args ?? {}) as Record<string, unknown>;
+  const year = Number(a.year);
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return { error: "Provide a year, e.g. 2025 or 2026." };
+  const weekFrom = typeof a.week_from === "string" ? a.week_from.slice(0, 10) : null;
+  const weekTo = typeof a.week_to === "string" ? a.week_to.slice(0, 10) : null;
+
+  const { data: batches, error: bErr } = await sb
+    .from("historical_pl_batches").select("id").eq("year", year);
+  if (bErr) throw bErr;
+  const ids = (batches ?? []).map((b: any) => b.id);
+  if (!ids.length) return { found: false, message: `No stored P&L data for ${year}.` };
+
+  let q = sb.from("historical_pl_rows")
+    .select("week_start, contractor_name, company, hours, actual_hours, contractor_cost, client_billing, income_after_3_percent, expense_after_1_percent, gross_after_deductions, margin, raw")
+    .in("batch_id", ids);
+  if (weekFrom) q = q.gte("week_start", weekFrom);
+  if (weekTo) q = q.lte("week_start", weekTo);
+
+  const rows: any[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await q.range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE) break;
+  }
+
+  const isInternal = (r: any) => String(r.company ?? "").replace(/[\s.]/g, "").toLowerCase().startsWith("outsta");
+  const external = rows.filter((r) => !isInternal(r));
+  const num = (n: unknown) => Number(n ?? 0);
+  const sum = (f: (r: any) => number) => Math.round(external.reduce((t, r) => t + f(r), 0) * 100) / 100;
+  const headcount = new Set(
+    external.filter((r) => !(r.raw as any)?.__exclude_headcount)
+      .map((r) => String(r.contractor_name ?? "").trim().toLowerCase()).filter(Boolean),
+  ).size;
+  const weeks = new Set(external.map((r) => String(r.week_start ?? "").slice(0, 10)).filter(Boolean));
+
+  // Per-week series so the model can compare weeks without another call.
+  const byWeek = new Map<string, { income: number; expense: number; gross: number; hours: number; people: Set<string> }>();
+  for (const r of external) {
+    const w = String(r.week_start ?? "").slice(0, 10);
+    if (!w) continue;
+    const g = byWeek.get(w) ?? { income: 0, expense: 0, gross: 0, hours: 0, people: new Set<string>() };
+    g.income += num(r.income_after_3_percent ?? r.client_billing);
+    g.expense += num(r.expense_after_1_percent ?? r.contractor_cost);
+    g.gross += num(r.gross_after_deductions ?? r.margin);
+    g.hours += num(r.actual_hours ?? r.hours);
+    const n = String(r.contractor_name ?? "").trim().toLowerCase();
+    if (n && !(r.raw as any)?.__exclude_headcount) g.people.add(n);
+    byWeek.set(w, g);
+  }
+  const weekly = [...byWeek.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([week_start, g]) => ({
+    week_start,
+    active_contractors: g.people.size,
+    submitted_hours: Math.round(g.hours * 100) / 100,
+    income_after_3_percent: Math.round(g.income * 100) / 100,
+    expense_after_1_percent: Math.round(g.expense * 100) / 100,
+    gross_after_deductions: Math.round(g.gross * 100) / 100,
+  }));
+
+  return {
+    found: true,
+    year,
+    week_range: { from: weekFrom, to: weekTo },
+    weeks_in_range: weeks.size,
+    unique_external_contractors: headcount,
+    totals: {
+      submitted_hours: sum((r) => num(r.actual_hours ?? r.hours)),
+      income_after_3_percent: sum((r) => num(r.income_after_3_percent ?? r.client_billing)),
+      expense_after_1_percent: sum((r) => num(r.expense_after_1_percent ?? r.contractor_cost)),
+      gross_after_deductions: sum((r) => num(r.gross_after_deductions ?? r.margin)),
+    },
+    weekly,
+    note: "Internal (OutSta) rows are excluded from every figure, matching the P&L report. Income/expense/gross are after the standard fee deductions. Compare years by calling this tool once per year.",
+  };
+}
+
 const TOOLS: MarkbotTool[] = [
+  {
+    name: "pl_analytics",
+    description: "P&L analytics from the stored historical weekly rows for one year, optionally limited to a week range (week_from/week_to, YYYY-MM-DD Monday dates, inclusive). Returns exact totals (submitted hours, income after 3%, expense after 1%, gross after deductions), unique external contractor count, weeks in range, and a per-week breakdown. Internal OutSta rows are excluded, matching the P&L report. For year-over-year questions, call it once per year and compare.",
+    required_tab: "pl",
+    parameters: {
+      type: "object",
+      properties: {
+        year: { type: "integer", description: "The P&L year, e.g. 2025 or 2026" },
+        week_from: { type: "string", description: "First week_start to include, YYYY-MM-DD (optional)" },
+        week_to: { type: "string", description: "Last week_start to include, YYYY-MM-DD (optional)" },
+      },
+      required: ["year"],
+    },
+    handler: plAnalytics,
+  },
   {
     name: "find_candidates",
     description: "Find candidates by status, role keywords (job title and skills), availability, RM profile and/or a free-text query. Returns the exact total matching the filters, an exact breakdown_by_job_title of ALL matches (use this for 'breakdown'/'how many per role' questions in one call; do not call repeatedly per role), and up to `limit` candidates with availability, profile flag and top matching excerpts. Hired, Reject and Archived are excluded unless listed in statuses.",
@@ -770,7 +867,13 @@ Role requirements (get_role_requirements tool):
 - When asked for candidates for a client or role, first call get_role_requirements, then${allowed.includes("applicants") ? " call find_candidates using the must-have skills as query" : " explain the requirements (you can't search candidates for this user)"}.
 - For each candidate, say which requirements they match and which they lack, quoting the excerpts.
 - If both a job and a hiring request match, use both and say which each requirement came from.
-- If nothing matches, say so and ask which role is meant.` : ""}`;
+- If nothing matches, say so and ask which role is meant.` : ""}${allowed.includes("pl") ? `
+
+P&L analytics (pl_analytics tool):
+- Use it for any question about P&L, income, expense, gross profit, hours or contractor counts over time. It reads the same stored historical weekly rows as the P&L tabs, so quote its totals exactly and never recalculate them.
+- For year-over-year or period comparisons, call it once per year/period and compare the results side by side.
+- Income, expense and gross are after the standard fee deductions; internal OutSta rows are already excluded. Say so briefly when it matters.
+- If a year has no stored data, say so plainly instead of guessing figures.` : ""}`;
 }
 
 // Flag words in the question that match client names, so the model reads them as system entities.
