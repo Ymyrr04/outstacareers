@@ -19,6 +19,9 @@ const MAX_TOKENS = 4000;
 const MATCH_COUNT = 10;
 const CONTEXT_MESSAGES = 20;
 const MAX_TOOL_ROUNDS = 8;
+const DAILY_QUESTION_LIMIT = 150; // per admin, per Eastern Time day (counted from rag_chat_logs)
+const TOOL_TIME_BUDGET_MS = 90_000; // no new tool rounds after this; answer from gathered results
+const RETRIEVAL_QUERY_MAX_CHARS = 1000;
 
 // Same tab list and default rules as src/hooks/useTabPermissions.tsx
 const TAB_LABELS: Record<string, string> = {
@@ -1019,6 +1022,16 @@ Deno.serve(async (req) => {
     const msgs = (body as { messages: { role: "user" | "assistant"; content: string }[] }).messages;
     const question = msgs[msgs.length - 1];
     if (question.role !== "user") return json({ error: "The last message must be from the user" }, 400);
+    const startedAt = Date.now();
+
+    // ---- Per-admin daily limit (Eastern Time day) ----
+    const { count: todayCount, error: limitErr } = await sb.from("rag_chat_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("admin_user_id", userId).gte("created_at", etMidnightIso(etYmd()));
+    if (limitErr) throw limitErr;
+    if ((todayCount ?? 0) >= DAILY_QUESTION_LIMIT) {
+      return json({ error: "You've reached today's Markbot limit. It resets at midnight ET." }, 429);
+    }
 
     // ---- Saved conversation (owned by the caller) ----
     let conversationId = (body as any).conversation_id as string | null | undefined;
@@ -1035,15 +1048,8 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false }).limit(CONTEXT_MESSAGES - 1);
       if (mErr) throw mErr;
       saved = ((rows ?? []) as any[]).reverse();
-    } else {
-      const { data: conv, error: cvErr } = await sb.from("markbot_conversations")
-        .insert({ admin_user_id: userId, title: question.content.trim().slice(0, 60) }).select("id").single();
-      if (cvErr) throw cvErr;
-      conversationId = conv.id;
     }
-    const { error: umErr } = await sb.from("markbot_messages")
-      .insert({ conversation_id: conversationId, role: "user", content: question.content });
-    if (umErr) throw umErr;
+    // The conversation (if new) and the user message are saved only after an answer is generated.
     // Last 6 saved messages (including this question) form the model's context
     const recent = [...saved, question].slice(-CONTEXT_MESSAGES);
     const convCtx: ConvContext = { client: null, role_title: null, hiring_request_id: null, job_id: null, applicant_ids: [], date_range: null, ...savedCtx, ...((body as any).context ?? {}) };
@@ -1061,7 +1067,9 @@ Deno.serve(async (req) => {
 
     try {
       // ---- Retrieve ----
-      const searchText = recent.map((m) => `${m.role}: ${m.content}`).join("\n");
+      // Retrieval query: current question + previous user message only (never assistant text), capped.
+      const prevUser = [...saved].reverse().find((m) => m.role === "user");
+      const searchText = [prevUser?.content, question.content].filter(Boolean).join("\n").slice(-RETRIEVAL_QUERY_MAX_CHARS);
       const emb = await gatewayFetch("/embeddings", apiKey, {
         model: EMBED_MODEL, input: [searchText], dimensions: EMBED_DIMENSIONS,
       });
@@ -1121,11 +1129,13 @@ Deno.serve(async (req) => {
         // answer from the tool results already gathered. Do not append a user
         // message here — after tool results, the Gemini route rejects requests
         // ("Requests ending with a model turn are not supported").
+        // After the time budget, offer no tools so the model answers from gathered results.
+        const finalRound = round === MAX_TOOL_ROUNDS || Date.now() - startedAt > TOOL_TIME_BUDGET_MS;
         const resp = await gatewayFetch("/chat/completions", apiKey, {
           model: CHAT_MODEL,
           messages: chatMessages,
           max_tokens: MAX_TOKENS,
-          ...(offered.length && round < MAX_TOOL_ROUNDS
+          ...(offered.length && !finalRound
             ? { tools: offered.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
             : {}),
         });
@@ -1133,7 +1143,7 @@ Deno.serve(async (req) => {
         completionTokens += resp?.usage?.completion_tokens ?? 0;
         const msg = resp?.choices?.[0]?.message;
         const calls = msg?.tool_calls as any[] | undefined;
-        if (!calls?.length || round === MAX_TOOL_ROUNDS) { answer = (msg?.content ?? "").trim(); break; }
+        if (!calls?.length || finalRound) { answer = (msg?.content ?? "").trim(); break; }
 
         chatMessages.push({ role: "assistant", content: msg.content ?? "", tool_calls: calls });
         const results = await Promise.all(calls.map(async (call) => {
@@ -1209,6 +1219,16 @@ Deno.serve(async (req) => {
       }).select("id").single();
       if (lErr) console.error("markbot-chat log insert failed:", lErr.message);
 
+      if (!conversationId) {
+        const { data: conv, error: cvErr } = await sb.from("markbot_conversations")
+          .insert({ admin_user_id: userId, title: question.content.trim().slice(0, 60) }).select("id").single();
+        if (cvErr) throw cvErr;
+        conversationId = conv.id;
+      }
+      // Save the question first (its own insert so it sorts before the answer), then the answer.
+      const { error: umErr } = await sb.from("markbot_messages")
+        .insert({ conversation_id: conversationId, role: "user", content: question.content });
+      if (umErr) throw umErr;
       const [{ error: amErr }, { error: ucErr }] = await Promise.all([
         sb.from("markbot_messages").insert({
           conversation_id: conversationId, role: "assistant", content: answer, sources, blocked, log_id: log?.id ?? null,
