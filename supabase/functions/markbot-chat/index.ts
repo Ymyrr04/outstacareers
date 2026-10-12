@@ -757,6 +757,7 @@ const TOOLS: MarkbotTool[] = [
     name: "get_role_requirements",
     description: "Look up a role's requirements by client name and/or role title (partial, case-insensitive). Returns up to 5 matching jobs (title, client, region, rate, active, description, qualifications, responsibilities) and up to 5 client hiring requests (title, client, stage, priority, hours, dates, industry, notes, latest 5 comments with author and date).",
     required_tab: "pipeline",
+    alt_tabs: ["jobs"],
     parameters: {
       type: "object",
       properties: {
