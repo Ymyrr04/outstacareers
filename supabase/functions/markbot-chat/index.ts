@@ -592,6 +592,8 @@ async function plAnalytics(args: unknown, { sb }: ToolCtx) {
     .in("batch_id", ids);
   if (weekFrom) q = q.gte("week_start", weekFrom);
   if (weekTo) q = q.lte("week_start", weekTo);
+  // Stable order so .range() pages never skip or repeat rows.
+  q = q.order("week_start", { ascending: true }).order("id", { ascending: true });
 
   const rows: any[] = [];
   const PAGE = 1000;
