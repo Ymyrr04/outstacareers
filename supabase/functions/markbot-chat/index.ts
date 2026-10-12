@@ -542,6 +542,33 @@ async function getRoleRequirements(args: unknown, { sb, allowedTabs }: ToolCtx) 
 
 // P&L analytics over the stored historical weekly rows — the same data the
 // Historical/Analytics P&L tabs show. Aggregates match the report rules:
+// Contractor separations (resigned/terminated) from contractor_assignments.
+// Separation date = end_date when set, else status_changed_at. Internal team excluded.
+async function contractorSeparations(args: unknown, { sb }: ToolCtx) {
+  const a = (args ?? {}) as Record<string, unknown>;
+  const from = typeof a.date_from === "string" ? a.date_from.slice(0, 10) : "";
+  const to = typeof a.date_to === "string" ? a.date_to.slice(0, 10) : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return { error: "Provide date_from and date_to as YYYY-MM-DD." };
+  const { data, error } = await sb.from("contractor_assignments")
+    .select("status, job_title, end_date, status_changed_at, separation_note, client_id, clients(company_name), applicants_prescreen(full_name)")
+    .in("status", ["resigned", "terminated"]).neq("client_id", INTERNAL_CLIENT_ID);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []).map((r: any) => ({
+    name: r.applicants_prescreen?.full_name ?? "Unknown", status: r.status, role: r.job_title,
+    client: r.clients?.company_name ?? null,
+    separation_date: (r.end_date ?? r.status_changed_at ?? "").slice(0, 10),
+    note: r.separation_note ? String(r.separation_note).slice(0, 200) : null,
+  })).filter((r) => r.separation_date >= from && r.separation_date <= to)
+    .sort((x, y) => x.separation_date.localeCompare(y.separation_date));
+  return {
+    date_from: from, date_to: to, total: rows.length,
+    resigned: rows.filter((r) => r.status === "resigned").length,
+    terminated: rows.filter((r) => r.status === "terminated").length,
+    contractors: rows,
+    note: "Date = contract end date, or the date the status changed when no end date is set. Internal team excluded.",
+  };
+}
+
 // internal (OutSta) rows are excluded from every total, headcount counts
 // distinct non-internal contractor names, and hours prefer actual_hours.
 async function plAnalytics(args: unknown, { sb }: ToolCtx) {
@@ -623,6 +650,20 @@ async function plAnalytics(args: unknown, { sb }: ToolCtx) {
 }
 
 const TOOLS: MarkbotTool[] = [
+  {
+    name: "contractor_separations",
+    description: "Exact list and count of contractors who resigned or were terminated within a date range (inclusive, YYYY-MM-DD), with name, role, client, date and note. Use for any resignation/termination/separation/attrition/turnover question about contractors. This is the authoritative source — do not infer separations from candidate status history.",
+    required_tab: "contractors",
+    parameters: {
+      type: "object",
+      properties: {
+        date_from: { type: "string", description: "Start date YYYY-MM-DD" },
+        date_to: { type: "string", description: "End date YYYY-MM-DD" },
+      },
+      required: ["date_from", "date_to"],
+    },
+    handler: contractorSeparations,
+  },
   {
     name: "pl_analytics",
     description: "P&L analytics from the stored historical weekly rows for one year, optionally limited to a week range (week_from/week_to, YYYY-MM-DD Monday dates, inclusive). Returns exact totals (submitted hours, income after 3%, expense after 1%, gross after deductions), unique external contractor count, weeks in range, and a per-week breakdown. Internal OutSta rows are excluded, matching the P&L report. For year-over-year questions, call it once per year and compare.",
