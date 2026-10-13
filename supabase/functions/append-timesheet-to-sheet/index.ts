@@ -106,7 +106,6 @@ Deno.serve(async (req) => {
     const overtime = Number(ts.overtime_hours ?? 0);
     const bonus = Number(ts.incentive_amount ?? 0);
     const dep = computeDeposit(assignment?.start_date, hpw, ts.week_ending_date, totalHours);
-    const regularHours = Math.max(0, totalHours - overtime);
     const invoice = hourlyRate > 0 ? totalHours * hourlyRate : 0;
     const status = ts.outsta_status || ts.status || '';
 
