@@ -89,7 +89,7 @@ export async function computePlWeek(
   weekEnding.setDate(weekEnding.getDate() + 6);
   const weekEndingStr = ymd(weekEnding);
 
-  // Active OR terminated whose end_date >= week start
+  // Active/rendering OR ended (terminated/resigned) whose end_date >= week start
   const { data: aData, error: aErr } = await supabase
     .from('contractor_assignments')
     .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, hours_per_week, pl_standard_hours, start_date, end_date, sunday_hours_excluded,
