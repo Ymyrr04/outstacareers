@@ -153,8 +153,11 @@ async function loadDepositHeld(res: PlWeekRow[]): Promise<Map<string, Held>> {
     const dep = computeDepositSchedule(a, byA.get(a.id) || []).get(r.timesheet?.id ?? '');
     if (!dep?.isDeposit || !(dep.depositHours > 0)) continue;
     const rate = Number(r.hourlyRate || 0);
-    const amount = Math.min(r2(dep.depositHours * rate), Number(r.expenses) || 0);
-    out.set(a.id, { hours: dep.depositHours, amount });
+    // Hours past the deposit target are paid out, so only the remainder is held.
+    const held = Math.max(0, dep.depositHours - (dep.excessHours || 0));
+    if (!(held > 0)) continue;
+    const amount = Math.min(r2(held * rate), Number(r.expenses) || 0);
+    out.set(a.id, { hours: held, amount });
   }
   return out;
 }
