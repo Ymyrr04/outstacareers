@@ -46,7 +46,8 @@ export function notCountedThisWeek(r: PlWeekRow, monday: string): boolean {
   const start = r.assignment.start_date;
   const end = r.assignment.end_date;
   if (start && start > weekEnd) return true;
-  if (end && end >= monday && end <= weekEnd && !(r.actualHours > 0)) return true;
+  // Ended (terminated/resigned) during this week: hours still count, but not as an active contractor.
+  if (end && end >= monday && end <= weekEnd && (['terminated', 'resigned'].includes(r.assignment.status) || !(r.actualHours > 0))) return true;
   return false;
 }
 
@@ -81,7 +82,7 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
       client_deposit_text: txtDep(r.clientDeposit),
       contractor_deposit_text: txtDep(r.contractorDeposit),
       bonus: r.bonus,
-      ...(notCountedThisWeek(r, monday) ? { __exclude_headcount: true, headcount_reason: 'not_started_or_ended_no_hours' } : {}),
+      ...(notCountedThisWeek(r, monday) ? { __exclude_headcount: true, headcount_reason: 'not_started_or_ended_this_week' } : {}),
     },
   };
 }
