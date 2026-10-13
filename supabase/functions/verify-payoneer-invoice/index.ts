@@ -58,7 +58,7 @@ async function syncToSheet(timesheetId: string, url: string, amount: number, cur
     const overtime = Number(ts.overtime_hours ?? 0);
     const regularHours = Math.max(0, totalHours - overtime);
     const hourlyRate = Number((ts.contractor_assignments as any)?.hourly_rate || 0);
-    const invoice = hourlyRate > 0 ? Number((regularHours * hourlyRate).toFixed(2)) : 0;
+    const invoice = hourlyRate > 0 ? Number((totalHours * hourlyRate).toFixed(2)) : 0;
     const match = invoice && Math.abs(amount - invoice) < 0.01 ? '✓ Match' : '✗ Mismatch';
 
     const tab = tabNameForWeek(ts.week_ending_date);
