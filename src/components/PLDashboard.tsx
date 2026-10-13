@@ -1212,8 +1212,7 @@ export const PLDashboard = () => {
       const rate = Number(r.contractor?.hourly_rate || 0);
       const totalH = Number(r.total_hours);
       const otH = Number(r.overtime_hours || 0);
-      const regularH = Math.max(0, totalH - otH);
-      const invoice = rate > 0 ? Number((regularH * rate).toFixed(2)) : 0;
+      const invoice = rate > 0 ? Number((totalH * rate).toFixed(2)) : 0;
       const bonus = Number(r.incentive_amount || 0);
       const link = extractPayoneerLink(r.notes);
       const pv = link ? payoneerMap.get(link) : null;
