@@ -110,7 +110,7 @@ const STAGES: StageDefinition[] = [
     ],
     emailActions: [],
     outputs: [
-      { id: 'a-o1', label: 'Trigger: score-cv', description: 'After insert → AI scoring begins.', type: 'trigger', icon: Zap },
+      { id: 'a-o1', label: 'submit-application', description: 'Scores the CV right after someone applies.', type: 'trigger', icon: Zap },
       { id: 'a-o2', label: 'Email: Application Received', description: 'Auto email (5h delay) confirming receipt.', type: 'email', icon: Mail, details: ['Delay: 5 hours'] },
     ],
     emailTriggers: ['application_received'],
@@ -134,9 +134,9 @@ const STAGES: StageDefinition[] = [
       { id: 'b-db1', label: 'UPDATE applicants_prescreen', description: 'Sets all scoring fields + metadata.', type: 'db', icon: Database },
     ],
     edgeFunctions: [
-      { id: 'b-ef1', label: 'score-cv', description: 'Primary scoring. Model: gemini-3-flash-preview.', type: 'edge-fn', icon: Server, details: ['Uses: LOVABLE_API_KEY'] },
+      { id: 'b-ef1', label: 'submit-application', description: 'Scores the CV right after someone applies. Model: gemini-3-flash-preview.', type: 'edge-fn', icon: Server, details: ['Uses: LOVABLE_API_KEY'] },
       { id: 'b-ef2', label: 'extract-cv-with-vision', description: 'Fallback OCR for scanned PDFs.', type: 'edge-fn', icon: Server },
-      { id: 'b-ef3', label: 'rescore-cv', description: 'Manual admin-triggered rescore.', type: 'edge-fn', icon: Server },
+      { id: 'b-ef3', label: 'rescore-cv', description: 'Manual and batch rescore.', type: 'edge-fn', icon: Server },
     ],
     emailActions: [],
     outputs: [
@@ -154,7 +154,7 @@ const STAGES: StageDefinition[] = [
     automations: [
       { id: 'c1', label: '"New" Badge System', description: 'details_viewed_at IS NULL → "New" badge.', type: 'system', icon: Bell, details: ['Set on first detail view'] },
       { id: 'c2', label: 'First View Timestamp', description: 'details_viewed_at set on open.', type: 'system', icon: Eye },
-      { id: 'c3', label: 'Background CV Scan', description: 'Batch 50 unscored CVs → score-cv.', type: 'system', icon: ScanSearch, details: ['cv_file_url IS NOT NULL AND total_score IS NULL'] },
+      { id: 'c3', label: 'Background CV Scan', description: 'Batch 50 unscored CVs → rescore-cv.', type: 'system', icon: ScanSearch, details: ['cv_file_url IS NOT NULL AND total_score IS NULL'] },
       { id: 'c4', label: 'Star Candidate', description: 'Toggle is_starred for quick filtering.', type: 'manual', icon: Star },
     ],
     dbOperations: [
