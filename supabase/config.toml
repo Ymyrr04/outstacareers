@@ -9,9 +9,6 @@ verify_jwt = false
 [functions.submit-application]
 verify_jwt = false
 
-[functions.score-cv]
-verify_jwt = false
-
 [functions.bulk-upload-cv]
 verify_jwt = true
 
