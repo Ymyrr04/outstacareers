@@ -36,6 +36,7 @@ interface InterviewAnswer {
   text_answer: string | null;
   voice_recording_url: string | null;
   voice_duration_seconds: number | null;
+  transcript?: string | null;
   selected_option_id: string | null;
   ai_score: number | null;
   ai_feedback: string | null;
@@ -446,6 +447,17 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
                           </div>
                         ) : (
                           <p className="text-xs text-muted-foreground italic">No recording available</p>
+                        )}
+
+                        {answer?.voice_recording_url && (
+                          answer.transcript ? (
+                            <div className="text-sm bg-background p-3 rounded-lg border">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Transcript</p>
+                              <p className="whitespace-pre-wrap">{answer.transcript}</p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">Transcript not available</p>
+                          )
                         )}
 
                         {answer?.ai_feedback && (

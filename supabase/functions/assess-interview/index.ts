@@ -319,18 +319,33 @@ serve(async (req) => {
       skip_ai_assessment
     }: AssessmentRequest = await req.json();
 
-    if (!session_id || !answers || answers.length === 0) {
+    if (!session_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: session_id and answers' }),
+        JSON.stringify({ error: 'Missing required field: session_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const markManualReview = async (summary: string) => {
+      const { error } = await supabase
+        .from('interview_sessions')
+        .update({
+          status: 'completed_manual_review',
+          completed_at: new Date().toISOString(),
+          ai_summary: summary,
+        })
+        .eq('id', session_id);
+      if (error) console.error('Error updating session for manual review:', error);
+      await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
+      return error;
+    };
+
     // Dedupe guard: if session is already completed with an AI assessment, skip re-running the AI.
     {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
       const { data: existing } = await supabase
         .from('interview_sessions')
         .select('status, ai_summary')
@@ -345,37 +360,65 @@ serve(async (req) => {
       }
     }
 
+    // Safety net: only fills gaps when the client failed to save answers at all.
+    if (Array.isArray(answers) && answers.length > 0) {
+      await ensureAnswersPersisted(supabase, session_id, answers);
+    }
+
+    // Trust the database: load questions + answers (and durations) for this session.
+    const [{ data: dbQuestions }, { data: dbAnswers }] = await Promise.all([
+      supabase
+        .from('interview_questions')
+        .select('id, section, question_order, question_text, question_context')
+        .eq('session_id', session_id)
+        .order('question_order'),
+      supabase
+        .from('interview_answers')
+        .select('id, question_id, voice_recording_url, voice_duration_seconds, text_answer, transcript, created_at')
+        .eq('session_id', session_id)
+        .order('created_at', { ascending: true }),
+    ]);
+
+    type DbAnswer = {
+      answer_id: string | null;
+      question_text: string;
+      question_context: string;
+      section: string;
+      voice_recording_url: string | null;
+      voice_duration_seconds: number | null;
+      text_answer: string | null;
+      transcript: string | null;
+    };
+
+    const latestByQuestion = new Map<string, any>();
+    for (const a of dbAnswers ?? []) {
+      if (a.question_id) latestByQuestion.set(a.question_id, a);
+    }
+    const sessionAnswers: DbAnswer[] = (dbQuestions ?? [])
+      .filter((q: any) => q.section === 'voice' || q.section === 'text')
+      .map((q: any) => {
+        const a = latestByQuestion.get(q.id);
+        return {
+          answer_id: a?.id ?? null,
+          question_text: q.question_text,
+          question_context: q.question_context ?? '',
+          section: q.section,
+          voice_recording_url: a?.voice_recording_url ?? null,
+          voice_duration_seconds: a?.voice_duration_seconds ?? null,
+          text_answer: a?.text_answer ?? null,
+          transcript: a?.transcript ?? null,
+        };
+      });
 
     // Validate that answers have actual content
-    const hasVoiceContent = answers.some(a => a.section === 'voice' && a.voice_recording_url);
-    const hasTextContent = answers.some(a => a.section === 'text' && a.text_answer && a.text_answer.trim().length > 0);
-    
-    const hasAnyContent = hasVoiceContent || hasTextContent;
-    
-    if (!hasAnyContent) {
+    const hasVoiceContent = sessionAnswers.some(a => a.section === 'voice' && a.voice_recording_url);
+    const hasTextContent = sessionAnswers.some(a => a.section === 'text' && a.text_answer && a.text_answer.trim().length > 0);
+
+    if (!hasVoiceContent && !hasTextContent) {
       console.log('No actual answer content found - marking for manual review');
-      
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
-      const { error: updateError } = await supabase
-        .from('interview_sessions')
-        .update({
-          status: 'completed_manual_review',
-          completed_at: new Date().toISOString(),
-          ai_summary: 'Manual review required - No interview responses were recorded. Session may have timed out or answers were not submitted.',
-        })
-        .eq('id', session_id);
-
-      if (updateError) {
-        console.error('Error updating session for manual review:', updateError);
-      }
-
-      await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
-
+      await markManualReview('Manual review required - No interview responses were recorded. Session may have timed out or answers were not submitted.');
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           manual_review: true,
           no_content: true,
@@ -385,39 +428,17 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Safety net: make sure the raw answers are persisted even if the client-side
-    // inserts failed (historically this lost voice/text answers permanently).
-    await ensureAnswersPersisted(supabase, session_id, answers);
-
-
     if (skip_ai_assessment) {
       console.log('Skipping AI assessment - marking for manual review');
-      
-      const { error: updateError } = await supabase
-        .from('interview_sessions')
-        .update({
-          status: 'completed_manual_review',
-          completed_at: new Date().toISOString(),
-          ai_summary: 'Manual review required - AI assessment was not available.',
-        })
-        .eq('id', session_id);
-
+      const updateError = await markManualReview('Manual review required - AI assessment was not available.');
       if (updateError) {
-        console.error('Error updating session for manual review:', updateError);
         return new Response(
           JSON.stringify({ error: 'Failed to update interview session' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
-      await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
-
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           manual_review: true,
           message: 'Interview completed. Responses will be reviewed manually by our team.'
@@ -429,20 +450,9 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       console.log('No API key - marking for manual review');
-      
-      await supabase
-        .from('interview_sessions')
-        .update({
-          status: 'completed_manual_review',
-          completed_at: new Date().toISOString(),
-          ai_summary: 'Manual review required - AI service not configured.',
-        })
-        .eq('id', session_id);
-
-      await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
-
+      await markManualReview('Manual review required - AI service not configured.');
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           manual_review: true,
           message: 'Interview completed. Responses will be reviewed manually.'
@@ -451,9 +461,61 @@ serve(async (req) => {
       );
     }
 
+    const manualReviewResponse = (reason: string) => new Response(
+      JSON.stringify({
+        success: true,
+        manual_review: true,
+        message: `Interview completed. ${reason} - responses will be reviewed manually.`
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
     // Format answers for AI assessment
-    const voiceAnswers = answers.filter(a => a.section === 'voice');
-    const textAnswers = answers.filter(a => a.section === 'text');
+    const voiceAnswers = sessionAnswers.filter(a => a.section === 'voice');
+    const textAnswers = sessionAnswers.filter(a => a.section === 'text');
+
+    // Transcribe voice answers in parallel (reuse saved transcripts)
+    const TRANSCRIBE_MODEL = 'openai/gpt-transcribe';
+    const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+    const transcribeOne = async (a: DbAnswer): Promise<string | null> => {
+      if (a.transcript && a.transcript.trim()) return a.transcript;
+      if (!a.voice_recording_url) return null;
+      try {
+        const audioRes = await fetch(a.voice_recording_url);
+        if (!audioRes.ok) throw new Error(`audio fetch ${audioRes.status}`);
+        const buf = await audioRes.arrayBuffer();
+        if (!buf.byteLength || buf.byteLength > MAX_AUDIO_BYTES) throw new Error(`invalid audio size ${buf.byteLength}`);
+        const ext = (a.voice_recording_url.split('?')[0].split('.').pop() || 'webm').toLowerCase();
+        const mime = ext === 'mp4' || ext === 'm4a' ? 'audio/mp4' : ext === 'mp3' ? 'audio/mpeg' : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : 'audio/webm';
+        const form = new FormData();
+        form.append('model', TRANSCRIBE_MODEL);
+        form.append('file', new File([buf], `answer.${ext}`, { type: mime }));
+        form.append('response_format', 'json');
+        const res = await fetch('https://ai.gateway.lovable.dev/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+          body: form,
+        });
+        if (!res.ok) throw new Error(`transcription ${res.status}: ${(await res.text()).slice(0, 300)}`);
+        const json = await res.json();
+        logAiUsage({ functionName: 'assess-interview', model: TRANSCRIBE_MODEL, usage: json.usage, context: { session_id, kind: 'transcription' } });
+        const text = typeof json.text === 'string' ? json.text.trim() : '';
+        if (a.answer_id) {
+          const { error } = await supabase.from('interview_answers').update({ transcript: text }).eq('id', a.answer_id);
+          if (error) console.error('Failed to save transcript:', error);
+        }
+        return text;
+      } catch (e) {
+        console.error('Transcription failed for answer', a.answer_id, e);
+        return null;
+      }
+    };
+    const transcripts = await Promise.all(voiceAnswers.map(transcribeOne));
+    const transcriptFailures = voiceAnswers
+      .map((a, i) => (a.voice_recording_url && transcripts[i] === null ? i + 1 : null))
+      .filter((n): n is number => n !== null);
+
+    const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
     // Check which sections have questions and actual content
     const hasVoiceQuestions = voiceAnswers.length > 0;
@@ -466,7 +528,7 @@ serve(async (req) => {
     const hasTextResponses = hasTextQuestions && textAnsweredCount > 0;
 
     console.log(`Section questions check - Voice: ${voiceAnswers.length} questions, Text: ${textAnswers.length} questions`);
-    console.log(`Section content check - Voice: ${voiceAnsweredCount}/${voiceAnswers.length}, Text: ${textAnsweredCount}/${textAnswers.length}`);
+    console.log(`Section content check - Voice: ${voiceAnsweredCount}/${voiceAnswers.length}, Text: ${textAnsweredCount}/${textAnswers.length}, transcript failures: ${transcriptFailures.length}`);
 
     // Build score override instructions for AI
     const scoreOverrides: string[] = [];
@@ -483,42 +545,47 @@ serve(async (req) => {
       scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text answers submitted)');
     }
 
-    const scoreOverrideSection = scoreOverrides.length > 0 
+    const scoreOverrideSection = scoreOverrides.length > 0
       ? `\n\nMANDATORY SCORE OVERRIDES (sections without questions or without answers = automatic 0):\n${scoreOverrides.join('\n')}\n\nThese scores MUST be exactly 0 - do not infer from CV or other sections. The overall score should only reflect sections that had questions AND answers.`
       : '';
 
+    const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
     const systemPrompt = `You are a senior HR professional with extensive experience in candidate assessment. Your task is to provide a rigorous, objective evaluation of interview performance.
 
-INTERVIEW FORMAT: This interview consists of 3 voice questions (experience, technical & communication) and 1 text question (situational judgment).
+INTERVIEW FORMAT: This interview consists of ${plural(voiceAnswers.length, 'voice question')} (experience, technical & communication) and ${plural(textAnswers.length, 'text question')} (situational judgment).
+
+HOW TO JUDGE EACH ANSWER:
+- Each question comes with a "What this tests" note. Judge the answer against that note: did the candidate actually address what the question is testing, with specific evidence?
+- Voice answers are provided as transcripts of what the candidate said. Score from the words, not from the recording length.
+- A transcript under 15 words, or one that is gibberish, filler, unrelated or unintelligible, is a NON-ANSWER: treat it like an unanswered question.
+- If a transcript is marked "unavailable", do not guess its content; score only from the other answers and do not penalize the candidate for the missing transcript.
 
 SCORING FRAMEWORK (each dimension 0-100):
 
-1. EXPERIENCE SCORE (Voice Section):
+1. EXPERIENCE SCORE (Voice Section - judge content):
    - 90-100: Exceptional depth, specific achievements with metrics, directly relevant experience
    - 70-89: Strong relevant experience, clear examples, good articulation
    - 50-69: Adequate experience, some relevant examples but lacking specificity
    - 30-49: Limited relevant experience, vague or generic responses
-   - 0-29: Minimal/no relevant experience, did not answer, or extremely brief
+   - 0-29: Minimal/no relevant experience, did not answer, or non-answers
    - **0: MANDATORY if no voice recordings were submitted**
 
-2. TECHNICAL SCORE (Voice Section):
-   - 90-100: Expert-level proficiency, deep knowledge of required tools/skills
+2. TECHNICAL SCORE (Voice Section - judge content):
+   - 90-100: Expert-level proficiency, deep, accurate knowledge of required tools/skills
    - 70-89: Solid technical foundation, comfortable with most requirements
    - 50-69: Basic competency, may need training on some tools
-   - 30-49: Limited technical skills, significant gaps
-   - 0-29: Lacks fundamental technical requirements
+   - 30-49: Limited technical skills, significant gaps or inaccurate statements
+   - 0-29: Lacks fundamental technical requirements, or non-answers
    - **0: MANDATORY if no voice recordings were submitted**
 
-3. COMMUNICATION SCORE (Voice Section):
-   - Assessed via recording metadata (duration, whether answered)
-   - Ideal response: 45-120 seconds (shows depth without rambling)
-   - Too brief (<20 sec): Likely superficial or unprepared
-   - Too long (>150 sec): May indicate difficulty being concise
-   - 90-100: Optimal duration, engaged with all questions
-   - 70-89: Good engagement, mostly appropriate length
-   - 50-69: Inconsistent - some too brief, some too long
-   - 30-49: Multiple unanswered or extremely short responses
-   - 0-29: Most questions unanswered or minimal effort
+3. COMMUNICATION SCORE (Voice Section - judge clarity, structure and relevance):
+   - Judge from the transcripts: is the answer clear, logically structured, on-topic and easy to follow? Duration is only a minor secondary signal.
+   - 90-100: Clear, well-structured, concise and directly relevant on every question
+   - 70-89: Mostly clear and relevant, minor rambling or gaps in structure
+   - 50-69: Understandable but disorganized, partly off-topic, or uneven across questions
+   - 30-49: Hard to follow, frequently off-topic, or several non-answers
+   - 0-29: Mostly non-answers or unintelligible
    - **0: MANDATORY if no voice recordings were submitted**
 
 4. SITUATIONAL SCORE (Text Section):
@@ -535,11 +602,11 @@ OVERALL SCORE CALCULATION:
 ${scoreOverrideSection}
 
 ASSESSMENT GUIDELINES:
-- Be OBJECTIVE - base scores on actual evidence, not assumptions
-- Be SPECIFIC - cite actual responses/patterns in your analysis
+- Be OBJECTIVE - base scores on actual evidence in the answers, not assumptions
+- Be SPECIFIC - cite or paraphrase what the candidate actually said
 - Be CRITICAL - identify genuine concerns, don't sugarcoat
 - Be BALANCED - acknowledge both strengths and weaknesses
-- PENALIZE clearly: placeholder text ("test test"), one-word answers, no recordings
+- PENALIZE clearly: placeholder text ("test test"), one-word answers, non-answers, no recordings
 - **CRITICAL: Sections with NO answers must receive a score of exactly 0 - never infer from CV**
 
 Return ONLY valid JSON with this structure:
@@ -567,19 +634,28 @@ Return ONLY valid JSON with this structure:
   }
 }`;
 
-    const voiceAnswersFormatted = voiceAnswers.map((a, i) => 
-      `Q${i + 1}: ${a.question_text}
-Context: ${a.question_context}
-Recording: ${a.voice_recording_url ? 'Yes' : 'No'}
-Duration: ${a.voice_duration_seconds || 0} seconds`
-    ).join('\n\n');
+    const voiceAnswersFormatted = voiceAnswers.map((a, i) => {
+      let transcriptLine: string;
+      if (!a.voice_recording_url) transcriptLine = 'Not answered (no recording)';
+      else if (transcripts[i] === null) transcriptLine = 'Transcript unavailable';
+      else {
+        const t = transcripts[i] as string;
+        const wc = wordCount(t);
+        transcriptLine = `${wc < 15 ? `[NON-ANSWER: only ${wc} words] ` : ''}"${t.substring(0, 6000)}"`;
+      }
+      return `Q${i + 1}: ${a.question_text}
+What this tests: ${a.question_context || 'Not specified'}
+Duration: ${a.voice_duration_seconds || 0} seconds
+Transcript: ${transcriptLine}`;
+    }).join('\n\n');
 
-    const textAnswersFormatted = textAnswers.map((a, i) => 
+    const textAnswersFormatted = textAnswers.map((a, i) =>
       `Q${i + 1}: ${a.question_text}
-Context: ${a.question_context}
+What this tests: ${a.question_context || 'Not specified'}
 Answer: ${a.text_answer || 'Not answered'}`
     ).join('\n\n');
 
+    const cvSafe = cv_text || '';
     const userPrompt = `Assess this candidate's interview performance:
 
 CANDIDATE: ${applicant_name}
@@ -591,83 +667,63 @@ REQUIRED QUALIFICATIONS:
 ${qualifications?.length ? qualifications.map((q, i) => `${i + 1}. ${q}`).join('\n') : 'Not specified'}
 
 CV SUMMARY:
-${cv_text.substring(0, 2000)}${cv_text.length > 2000 ? '...' : ''}
+${cvSafe.substring(0, 2000)}${cvSafe.length > 2000 ? '...' : ''}
 
 === VOICE INTERVIEW ANSWERS (Experience, Technical & Communication) ===
 ${voiceAnswersFormatted || 'No voice answers recorded'}
 
-=== TEXT ANSWER (Situational Question) ===
+=== TEXT ANSWERS (Situational) ===
 ${textAnswersFormatted || 'No text answer provided'}
 
 Provide your assessment. Return ONLY the JSON object.`;
 
     console.log('Assessing interview...');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-3-flash-preview',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+        }),
+      });
+    } catch (e) {
+      console.error('AI request failed:', e);
+      await markManualReview('Manual review required - AI assessment request failed.');
+      return manualReviewResponse('AI assessment failed');
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI API error:', response.status, errorText);
-      
-      if (response.status === 429 || response.status === 402) {
-        const reason = response.status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded';
-        console.log(`${reason} - falling back to manual review`);
-        
-        await supabase
-          .from('interview_sessions')
-          .update({
-            status: 'completed_manual_review',
-            completed_at: new Date().toISOString(),
-            ai_summary: `Manual review required - ${reason}.`,
-          })
-          .eq('id', session_id);
-
-        await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
-
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            manual_review: true,
-            message: `Interview completed. ${reason} - responses will be reviewed manually.`
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ error: 'AI service unavailable' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      const reason = response.status === 402 ? 'AI credits exhausted'
+        : response.status === 429 ? 'Rate limit exceeded'
+        : 'AI assessment failed';
+      await markManualReview(`Manual review required - ${reason}.`);
+      return manualReviewResponse(reason);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const data = await response.json().catch(() => null);
+    const content = data?.choices?.[0]?.message?.content;
     logAiUsage({
       functionName: 'assess-interview',
       model: 'google/gemini-3-flash-preview',
-      usage: data.usage,
+      usage: data?.usage,
       context: { session_id },
     });
 
     if (!content) {
       console.error('No content in AI response');
-      return new Response(
-        JSON.stringify({ error: 'Invalid AI response' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await markManualReview('Manual review required - AI returned an empty assessment.');
+      return manualReviewResponse('AI assessment failed');
     }
 
     console.log('AI assessment response:', content);
@@ -689,10 +745,8 @@ Provide your assessment. Return ONLY the JSON object.`;
       assessmentResult = JSON.parse(jsonContent);
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError, 'Content:', jsonContent);
-      return new Response(
-        JSON.stringify({ error: 'Failed to parse assessment' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await markManualReview('Manual review required - AI assessment could not be read.');
+      return manualReviewResponse('AI assessment failed');
     }
 
     // Validate and sanitize scores
@@ -707,6 +761,10 @@ Provide your assessment. Return ONLY the JSON object.`;
       ai_concerns: Array.isArray(assessmentResult.ai_concerns) ? assessmentResult.ai_concerns : [],
       ai_assessment_details: assessmentResult.ai_assessment_details || {}
     };
+
+    for (const n of transcriptFailures) {
+      validatedResult.ai_concerns.push(`Voice answer ${n}: transcript unavailable — please listen to the recording`);
+    }
 
     // ENFORCE: Sections with no questions or no answers get 0
     if (!hasVoiceQuestions) {

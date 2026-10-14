@@ -3023,6 +3023,7 @@ export type Database = {
           selected_option_id: string | null
           session_id: string
           text_answer: string | null
+          transcript: string | null
           voice_duration_seconds: number | null
           voice_recording_url: string | null
         }
@@ -3038,6 +3039,7 @@ export type Database = {
           selected_option_id?: string | null
           session_id: string
           text_answer?: string | null
+          transcript?: string | null
           voice_duration_seconds?: number | null
           voice_recording_url?: string | null
         }
@@ -3053,6 +3055,7 @@ export type Database = {
           selected_option_id?: string | null
           session_id?: string
           text_answer?: string | null
+          transcript?: string | null
           voice_duration_seconds?: number | null
           voice_recording_url?: string | null
         }
