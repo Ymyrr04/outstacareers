@@ -31,7 +31,7 @@ serve(async (req) => {
     // Ensure proper data URL format
     const imageUrl = imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -90,8 +90,9 @@ serve(async (req) => {
     });
 
 
-    const editedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    const textContent = data.choices?.[0]?.message?.content;
+    const b64 = data.data?.[0]?.b64_json;
+    const editedImageUrl = b64 ? `data:image/jpeg;base64,${b64}` : null;
+    const textContent = data.data?.[0]?.revised_prompt ?? null;
 
     if (!editedImageUrl) {
       console.log("No image in response, text content:", textContent);
