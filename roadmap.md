@@ -20,4 +20,4 @@
 - [x] Index RM resource guides: allow resource entries in the knowledge checks and let guides jump the indexing queue
 - [x] Tighten Markbot tool access: role requirements open with Jobs access; candidate status hides hiring-request links and assignment details per tab
 
-- [ ] Read-only v2 CV scoring comparison on 10 applications (no ATS writes)
+- [x] Read-only v2 CV scoring comparison on 10 applications (no ATS writes)
