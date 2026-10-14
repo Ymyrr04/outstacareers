@@ -505,14 +505,18 @@ export const ContractorsDashboard = () => {
         .from('contractor_assignments')
         .select(`
           *,
-          applicant:applicants_prescreen(full_name, email, location, phone),
+          applicant:applicants_prescreen(full_name, email, location, phone, job_source),
           client:clients(company_name, industry)
         `)
         .order('status')
         .order('start_date', { ascending: false });
 
       if (error) throw error;
-      setContractors(data || []);
+      // Source falls back to the applicant's "Where did you learn about this job" answer
+      setContractors(((data || []) as any[]).map((c) => ({
+        ...c,
+        source: (c.source && String(c.source).trim()) || c.applicant?.job_source?.trim() || null,
+      })));
     } catch (err: any) {
       toast({
         title: 'Error',
