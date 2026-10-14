@@ -80,7 +80,7 @@ async function extractWithVision(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           {
             role: 'user',
@@ -136,7 +136,7 @@ If this is not a CV/resume, respond with: "EXTRACTION_FAILED: [reason]"`
     const extractedContent = visionData.choices?.[0]?.message?.content;
     logAiUsage({
       functionName: 'bulk-upload-cv:vision',
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       usage: visionData.usage,
       context: { mimeType },
     });

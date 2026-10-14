@@ -38,7 +38,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
+        model: "google/gemini-3.1-flash-lite-image",
         messages: [
           {
             role: "user",
@@ -84,7 +84,7 @@ serve(async (req) => {
     console.log("AI response received");
     logAiUsage({
       functionName: 'edit-contractor-image',
-      model: 'google/gemini-2.5-flash-image-preview',
+      model: 'google/gemini-3.1-flash-lite-image',
       usage: data.usage,
       context: { name, role },
     });

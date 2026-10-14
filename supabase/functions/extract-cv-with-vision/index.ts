@@ -136,7 +136,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           {
             role: 'user',
@@ -193,7 +193,7 @@ If the document is not readable or is not a CV/resume, respond with: "EXTRACTION
 
     logAiUsage({
       functionName: 'extract-cv-with-vision',
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       usage: visionData.usage,
       context: { mimeType, applicant_id },
     });

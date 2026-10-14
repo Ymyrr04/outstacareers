@@ -59,7 +59,7 @@ Rules:
         'X-Lovable-AIG-SDK': 'raw-fetch',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },
@@ -81,7 +81,7 @@ Rules:
     const raw = data.choices?.[0]?.message?.content ?? '{}';
     logAiUsage({
       functionName: 'apollo-ai-parse',
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       usage: data.usage,
       context: { prompt_length: prompt.length },
     });
