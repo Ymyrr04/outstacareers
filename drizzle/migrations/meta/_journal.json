@@ -260,6 +260,13 @@
       "when": 1791995584346,
       "tag": "0036_add_scoring_version",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791998380240,
+      "tag": "0037_interview_answer_transcript",
+      "breakpoints": true
     }
   ]
 }
