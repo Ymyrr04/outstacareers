@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.interview_rescore_staging IS 'DEPRECATED: one-off temporary holding table for the October 2026 interview rescore; unused.';

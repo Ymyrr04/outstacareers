@@ -3120,6 +3120,24 @@ export type Database = {
           },
         ]
       }
+      interview_rescore_staging: {
+        Row: {
+          id: number
+          kind: string
+          payload: Json
+        }
+        Insert: {
+          id?: number
+          kind: string
+          payload: Json
+        }
+        Update: {
+          id?: number
+          kind?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       interview_sessions: {
         Row: {
           admin_notified_at: string | null

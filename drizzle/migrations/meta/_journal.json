@@ -267,6 +267,20 @@
       "when": 1791998380240,
       "tag": "0037_interview_answer_transcript",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792000026067,
+      "tag": "0038_interview_rescore_staging",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792000052056,
+      "tag": "0039_deprecate_interview_rescore_staging",
+      "breakpoints": true
     }
   ]
 }
