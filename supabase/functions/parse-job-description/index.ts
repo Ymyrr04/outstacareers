@@ -64,7 +64,7 @@ Return ONLY valid JSON, no markdown, no explanation.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Parse this job description:\n\n${content}` }
@@ -86,7 +86,7 @@ Return ONLY valid JSON, no markdown, no explanation.`;
     const aiResponse = data.choices?.[0]?.message?.content;
     logAiUsage({
       functionName: 'parse-job-description',
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       usage: data.usage,
       context: { content_length: content.length },
     });

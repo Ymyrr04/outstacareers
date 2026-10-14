@@ -109,7 +109,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -127,7 +127,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
     const content = data.choices?.[0]?.message?.content;
     logAiUsage({
       functionName: 'submit-application:cv-scoring',
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       usage: data.usage,
       context: { applicant_id: applicantId, job_title: jobTitle },
     });

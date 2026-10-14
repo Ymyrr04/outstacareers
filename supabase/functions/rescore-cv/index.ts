@@ -76,7 +76,7 @@ async function extractTextWithVision(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           {
             role: 'user',
@@ -122,7 +122,7 @@ If the document is not readable or is not a CV/resume, respond with: "EXTRACTION
 
     logAiUsage({
       functionName: 'rescore-cv:vision',
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       usage: visionData.usage,
       context: { mimeType, file: fileName },
     });
@@ -369,7 +369,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -393,7 +393,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
 
     logAiUsage({
       functionName: 'rescore-cv:scoring',
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       usage: aiData.usage,
       context: { applicant_id, job_id: applicant.job_id, extraction_method: extractionMethod },
     });
