@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect, useDeferredValue } from 'react';
+import { AssessmentV2Details, PartialToolBadge } from '@/components/AssessmentV2Details';
 import { format, addMinutes } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -1240,7 +1241,7 @@ export const MyApplicantsDashboard = () => {
                                                   <div key={idx} className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-sm">
                                                     <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                                                     <div>
-                                                      <span className="font-medium text-green-700 dark:text-green-400">{tool.tool}</span>
+                                                      <span className="font-medium text-green-700 dark:text-green-400">{tool.tool}</span><PartialToolBadge tool={tool} />
                                                       {tool.context && (
                                                         <p className="text-xs text-muted-foreground mt-0.5">"{tool.context}"</p>
                                                       )}
@@ -1321,6 +1322,8 @@ export const MyApplicantsDashboard = () => {
                                               </div>
                                             )}
                                           </div>
+
+                                          <AssessmentV2Details details={applicant.ai_assessment_details} />
                                         </div>
                                       )}
                                     </div>

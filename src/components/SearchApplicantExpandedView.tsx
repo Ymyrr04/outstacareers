@@ -12,6 +12,7 @@ import { ApplicationHistorySection } from '@/components/ApplicationHistorySectio
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
+import { AssessmentV2Details, PartialToolBadge } from '@/components/AssessmentV2Details';
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -170,7 +171,7 @@ export const SearchApplicantExpandedView = ({
                           <div key={idx} className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-sm">
                             <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                             <div>
-                              <span className="font-medium text-green-700 dark:text-green-400">{tool.tool}</span>
+                              <span className="font-medium text-green-700 dark:text-green-400">{tool.tool}</span><PartialToolBadge tool={tool} />
                               {tool.context && <p className="text-xs text-muted-foreground mt-0.5">"{tool.context}"</p>}
                             </div>
                           </div>
@@ -236,6 +237,8 @@ export const SearchApplicantExpandedView = ({
                       </div>
                     )}
                   </div>
+
+                  <AssessmentV2Details details={applicant.ai_assessment_details} />
 
                   {applicant.ai_assessment_details.recommended_roles?.length > 0 && (
                     <div>
