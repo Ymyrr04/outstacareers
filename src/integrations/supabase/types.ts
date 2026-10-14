@@ -313,6 +313,7 @@ export type Database = {
           ranking_status: string | null
           reprofiled_at: string | null
           role_experience_score: number | null
+          scoring_version: string | null
           skills_tools_score: number | null
           start_availability: string
           status: string
@@ -376,6 +377,7 @@ export type Database = {
           ranking_status?: string | null
           reprofiled_at?: string | null
           role_experience_score?: number | null
+          scoring_version?: string | null
           skills_tools_score?: number | null
           start_availability: string
           status?: string
@@ -439,6 +441,7 @@ export type Database = {
           ranking_status?: string | null
           reprofiled_at?: string | null
           role_experience_score?: number | null
+          scoring_version?: string | null
           skills_tools_score?: number | null
           start_availability?: string
           status?: string

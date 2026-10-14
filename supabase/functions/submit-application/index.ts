@@ -35,51 +35,68 @@ async function runCvScoringInBackground(
       return;
     }
 
-    const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
+    const systemPrompt = `You are an expert HR recruiter and CV evaluator. Score a candidate's CV against a specific job posting with detailed, evidence-based analysis. Do not rely on impressions: justify every score and claim with evidence quoted or closely paraphrased from the CV.
+
+STRICTNESS: Reserve 70+ for a candidate you would shortlist today. Average CVs land in the 40-65 range. Never award the top of a band without explicit evidence.
 
 SCORING RULES (total = 100):
-- Role experience match: 0-45 points (how well their experience matches the role)
-- Skills and tools match: 0-45 points (how well their skills match required qualifications)
-- Availability and setup readiness: 0-5 points (remote work readiness indicators)
-- Bonus or red flags: -5 to +5 points (exceptional achievements or concerning patterns)
 
-RANKING STATUS:
-- Strong Match: total_score >= 70
-- Partial Match: total_score >= 40 AND < 70
-- Low Match: total_score < 40
+1. Role experience match: 0-50
+- 40-50: Direct, recent experience in the same or near-identical role, similar industry and scope
+- 25-39: Relevant but with gaps (different industry, smaller scope, less recent, partial overlap)
+- 10-24: Loosely related, transferable skills only
+- 0-9: No meaningfully related experience
+- Flag a seniority mismatch if the candidate is significantly over- or under-qualified for this level.
 
-EXTRACTION REQUIREMENTS:
-You MUST also extract searchable metadata from the CV:
-1. extracted_skills: List ALL skills mentioned (soft skills, hard skills, languages, certifications)
-   Examples: "Customer Service", "Sales", "Legal Intake", "Spanish", "Problem Solving", "Time Management"
-2. extracted_tools: List ALL software/tools/platforms mentioned
-   Examples: "Salesforce", "HubSpot", "Excel", "Google Workspace", "Clio", "Zendesk", "Shopify", "GoHighLevel"
-3. years_of_experience: Estimate total professional experience in years (null if unclear)
-   - Calculate from work history dates if available
-   - Use career span to estimate
+2. Skills and tools match: 0-45
+- Separate required from preferred qualifications if the posting does. Missing a required one costs significantly more.
+- 35-45: Meets all or nearly all required, plus some preferred
+- 20-34: Meets most required, or misses several preferred
+- 10-19: Missing multiple required
+- 0-9: Missing most or all required
+- A tool counts as matched only if the CV states it plainly. A vague or implied mention counts as half credit, never full.
 
-You MUST return ONLY valid JSON with NO additional text. The JSON must have this exact structure:
+3. Availability and setup readiness: 0-5
+- 4-5: Explicitly states remote setup, availability and timezone alignment
+- 2-3: Partial information, reasonable inference possible
+- 0-1: No information; do not assume readiness
+
+MISSING INFORMATION: If the CV or job posting lacks detail to score a category confidently, score conservatively and say so in missing_information so a human can verify.
+
+RED FLAGS: List these when present: frequent short tenures with no explanation, unexplained gaps over 6 months, inconsistent or implausible dates, vague or unverifiable claims. Red flags are for human review only. They never change the score or ranking.
+
+RANKING STATUS (total_score only):
+- Strong Match: >= 70
+- Partial Match: >= 40 and < 70
+- Low Match: < 40
+
+EXTRACTION:
+- extracted_skills: every skill mentioned (soft, hard, languages, certifications)
+- extracted_tools: every software, tool or platform mentioned
+- years_of_experience: total professional years from work history dates, or null if unclear
+
+Return ONLY valid JSON, no other text, in exactly this structure:
 {
-  "role_experience_score": <number 0-45>,
-  "skills_tools_score": <number 0-45>,
-  "availability_setup_score": <number 0-5>,
-  "bonus_red_flag_score": <number -5 to 5>,
-  "total_score": <sum of all scores>,
+  "role_experience_score": <0-50>,
+  "skills_tools_score": <0-45>,
+  "availability_setup_score": <0-5>,
+  "total_score": <sum of the three>,
   "ranking_status": "<Strong Match|Partial Match|Low Match>",
-  "summary": "<max 3 sentences summarizing the candidate's fit>",
+  "summary": "<exactly 3 sentences: overall fit, top strength, top concern>",
   "assessment_details": {
-    "matched_tools": [
-      {"tool": "<tool/skill name>", "found": true, "context": "<brief context from CV where this was found>"}
-    ],
-    "missing_tools": ["<required tool/skill not found in CV>"],
-    "experience_highlights": [
-      {"role": "<job title>", "company": "<company name if available>", "duration": "<time period if available>", "relevance": "<why this is relevant to the role>"}
-    ],
-    "strengths": ["<key strength 1>", "<key strength 2>"],
-    "concerns": ["<potential concern or gap if any>"]
+    "score_evidence": {"role_experience": "<CV evidence>", "skills_tools": "<CV evidence>", "availability": "<CV evidence or 'not stated'>"},
+    "matched_tools": [{"tool": "<name>", "found": true, "partial": <true if only implied>, "context": "<exact CV snippet>"}],
+    "missing_tools": ["<required or preferred item not found in the CV>"],
+    "experience_highlights": [{"role": "<title>", "company": "<company>", "duration": "<period>", "relevance": "<one sentence for this posting>"}],
+    "strengths": ["<2-4 items tied to CV evidence>"],
+    "concerns": ["<2-4 items tied to CV evidence or an information gap>"],
+    "seniority_flag": "<text or null>",
+    "missing_information": ["<what to verify with the candidate>"],
+    "red_flags": [{"type": "<short_tenure|gap|inconsistent_dates|unverifiable_claims>", "detail": "<evidence>"}],
+    "suggested_other_roles": [{"role": "<title>", "reason": "<one sentence>"}]
   },
-  "extracted_skills": ["<skill 1>", "<skill 2>", ...],
-  "extracted_tools": ["<tool 1>", "<tool 2>", ...],
+  "extracted_skills": [],
+  "extracted_tools": [],
   "years_of_experience": <number or null>
 }`;
 
@@ -160,11 +177,10 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
     }
 
     // Validate and sanitize the scores
-    const roleScore = Math.max(0, Math.min(45, scoreResult.role_experience_score || 0));
+    const roleScore = Math.max(0, Math.min(50, scoreResult.role_experience_score || 0));
     const skillsScore = Math.max(0, Math.min(45, scoreResult.skills_tools_score || 0));
     const availabilityScore = Math.max(0, Math.min(5, scoreResult.availability_setup_score || 0));
-    const bonusScore = Math.max(-5, Math.min(5, scoreResult.bonus_red_flag_score || 0));
-    const totalScore = roleScore + skillsScore + availabilityScore + bonusScore;
+    const totalScore = roleScore + skillsScore + availabilityScore;
 
     let rankingStatus = 'Low Match';
     if (totalScore >= 70) {
@@ -180,7 +196,6 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
         role_experience_score: roleScore,
         skills_tools_score: skillsScore,
         availability_setup_score: availabilityScore,
-        bonus_red_flag_score: bonusScore,
         total_score: totalScore,
         ranking_status: rankingStatus,
         ai_summary: scoreResult.summary || 'Unable to generate summary.',
@@ -188,6 +203,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
         extracted_skills: Array.isArray(scoreResult.extracted_skills) ? scoreResult.extracted_skills : [],
         extracted_tools: Array.isArray(scoreResult.extracted_tools) ? scoreResult.extracted_tools : [],
         years_of_experience: typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null,
+        scoring_version: 'v2',
       })
       .eq('id', applicantId);
 
