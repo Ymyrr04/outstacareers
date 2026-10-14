@@ -253,6 +253,13 @@
       "when": 1791828200963,
       "tag": "0035_rm_resources_char_count_update",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791995584346,
+      "tag": "0036_add_scoring_version",
+      "breakpoints": true
     }
   ]
 }
