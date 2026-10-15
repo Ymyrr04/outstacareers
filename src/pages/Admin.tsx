@@ -4445,7 +4445,7 @@ const Admin = () => {
           onSent={fetchApplicants}
         />
       )}
-      <HelpDeskWidget />
+      <HelpDeskWidget hidden={markbotOpen} />
       {canUseMarkbot && <MarkbotPanel open={markbotOpen} onOpenChange={setMarkbotOpen} canViewTab={canViewTab} onOpenTab={handleMainTabChange} />}
     </div>
   );

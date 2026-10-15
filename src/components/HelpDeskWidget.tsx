@@ -6,10 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { HELP_ARTICLES, HELP_TOPICS, HelpArticle, searchHelp } from '@/lib/helpArticles';
 
 
-export default function HelpDeskWidget() {
+export default function HelpDeskWidget({ hidden = false }: { hidden?: boolean }) {
   const [open, setOpen] = useState(false);
   // Starts hidden on every visit or login so the corner is clear by default.
   const [collapsed, setCollapsed] = useState(true);
+
 
   const changeCollapsed = (next: boolean) => {
     setCollapsed(next);
@@ -53,6 +54,10 @@ export default function HelpDeskWidget() {
       .insert({ query: `feedback:${article.id}:${helpful ? 'yes' : 'no'}`, matched: true })
       .then(() => undefined);
   };
+
+  // While Markbot is open the help desk (including its toggle tab) is hidden
+  // entirely so the chat panel sits flush in the bottom-right corner.
+  if (hidden) return null;
 
   return (
     <>
