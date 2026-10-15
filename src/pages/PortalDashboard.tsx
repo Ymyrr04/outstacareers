@@ -2503,11 +2503,9 @@ const PortalDashboard = () => {
 
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Please attach your Payoneer request link here</Label>
-                <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Paste your Payoneer payment request link" />
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p>
-                    Having issues submitting your Payoneer request? Contact admin via WhatsApp:{' '}
+                    If you have any issues submitting your weekly timesheet, contact admin via WhatsApp:{' '}
                     <a href="https://wa.me/639982326001" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
                       +63 998 232 6001
                     </a>
@@ -2956,13 +2954,13 @@ const PortalDashboard = () => {
                     <span className="text-base">
                       The total amount{info?.hourly_rate != null && (
                         <> (<strong className="text-primary">${(billableHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong>)</>
-                      )} <strong>matches my Payoneer invoice</strong> request.
+                      )} <strong>is the correct amount to be paid</strong> for this week.
                     </span>
                   </label>
                   {!invoiceMatches && (
                     <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-4">
                       <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-                        Invoice doesn't match? Please add the extra amount on top and explain the reason.
+                        Amount looks wrong? Please add the extra amount on top and explain the reason.
                       </p>
                       <div className="space-y-1.5">
                         <Label htmlFor="extra-amt" className="text-sm">Extra amount on top ($)</Label>
