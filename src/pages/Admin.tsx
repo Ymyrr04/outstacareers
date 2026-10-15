@@ -1789,6 +1789,17 @@ const Admin = () => {
             <h1 className="text-[11px] text-muted-foreground">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-1.5">
+            {canUseMarkbot && (
+              <Button
+                size="sm"
+                className="h-7 text-[11px] bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90"
+                onClick={() => setMarkbotOpen(true)}
+                title="Ask Markbot AI (Ctrl/Cmd+K)"
+              >
+                <Sparkles className="w-3 h-3 mr-1.5" />
+                Ask Markbot AI
+              </Button>
+            )}
             <ThemeToggle />
             <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => setMyCalendarOpen(true)}>
               <CalendarIcon className="w-3 h-3 mr-1.5" />
@@ -4433,18 +4444,6 @@ const Admin = () => {
           applicantEmail={availabilityApplicant.email}
           onSent={fetchApplicants}
         />
-      )}
-      {canUseMarkbot && (
-        <Button
-          size="icon"
-          aria-label="Ask Markbot AI"
-          title="Ask Markbot AI (Ctrl/Cmd+K)"
-          onClick={() => setMarkbotOpen(true)}
-          className="fixed bottom-5 right-5 z-50 h-12 w-auto gap-2 rounded-full px-4 shadow-lg bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90"
-        >
-          <Sparkles className="h-5 w-5" />
-          <span className="text-sm font-semibold">Ask Markbot</span>
-        </Button>
       )}
       <HelpDeskWidget />
       {canUseMarkbot && <MarkbotPanel open={markbotOpen} onOpenChange={setMarkbotOpen} canViewTab={canViewTab} onOpenTab={handleMainTabChange} />}
