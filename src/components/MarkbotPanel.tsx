@@ -150,9 +150,9 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Advance phrases on a timer: phrase 1 shows immediately, then a new random
-  // 5–7s wait before each next phrase. Holds at the last phrase until the
-  // answer arrives. Never loops and ignores backend stage events for display.
+  // Advance phrases on a timer: phrase 1 shows immediately, then every 5s the
+  // next phrase. Holds at the last phrase until the answer arrives. Never
+  // loops and ignores backend stage events for display.
   useEffect(() => {
     if (!loading) {
       if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
@@ -173,7 +173,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
         current += 1;
         setShownStage(current);
         step();
-      }, 5000 + Math.random() * 2000);
+      }, 5000);
     };
     step();
     return () => {
