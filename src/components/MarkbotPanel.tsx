@@ -134,7 +134,6 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [shownStage, setShownStage] = useState(0);
   const [prevShownStage, setPrevShownStage] = useState<number | null>(null);
   const categoryRef = useRef(0);
-  const shownAtRef = useRef(0);
   const stageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -151,8 +150,9 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Show the phrase for the real stage, holding each phrase at least 1s.
-  // Never advances on a timer and never goes backward.
+  // Advance phrases on a timer: phrase 1 shows immediately, then a new random
+  // 5–7s wait before each next phrase. Holds at the last phrase until the
+  // answer arrives. Never loops and ignores backend stage events for display.
   useEffect(() => {
     if (!loading) {
       if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
@@ -161,15 +161,26 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
       setPrevShownStage(null);
       return;
     }
-    if (stage <= shownStage) return;
-    const hold = Math.max(0, 1000 - (Date.now() - shownAtRef.current));
-    stageTimerRef.current = setTimeout(() => {
-      shownAtRef.current = Date.now();
-      setPrevShownStage(shownStage > 0 ? shownStage : null);
-      setShownStage(stage);
-    }, hold);
-    return () => { if (stageTimerRef.current) clearTimeout(stageTimerRef.current); };
-  }, [stage, loading, shownStage]);
+    let current = 1;
+    setPrevShownStage(null);
+    setShownStage(current);
+    const lastPhrase = LOADING_PHRASES[0].length;
+    const step = () => {
+      if (current >= lastPhrase) return;
+      stageTimerRef.current = setTimeout(() => {
+        if (current >= lastPhrase) return;
+        setPrevShownStage(current);
+        current += 1;
+        setShownStage(current);
+        step();
+      }, 5000 + Math.random() * 2000);
+    };
+    step();
+    return () => {
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+      stageTimerRef.current = null;
+    };
+  }, [loading]);
 
   useEffect(() => {
     if (open && !loading) setTimeout(() => inputRef.current?.focus(), 50);
@@ -251,7 +262,6 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     const isCurrent = () => requestRef.current?.id === req.id;
     setStage(0);
     categoryRef.current = Math.floor(Math.random() * LOADING_PHRASES.length);
-    shownAtRef.current = Date.now();
     const payload = { messages: history.map((m) => ({ role: m.role, content: m.content })), context, conversation_id: conversationId };
     try {
       let data: any = null;
