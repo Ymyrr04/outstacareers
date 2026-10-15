@@ -86,10 +86,6 @@ const TYPE_LABELS: Record<string, string> = {
   resource: 'RM resource',
 };
 
-const STARTERS: { tab: TabId; text: string }[] = [
-  { tab: 'pipeline', text: "What's new in the pipeline this week?" },
-  { tab: 'applicants', text: 'Who mentioned QuickBooks cleanup?' },
-];
 
 const formatDate = (d: string | null) => {
   if (!d) return null;
@@ -436,7 +432,6 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     }
   };
 
-  const starters = STARTERS.filter((s) => canViewTab(s.tab));
 
   return (
     <>
@@ -527,16 +522,6 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                   <p className="text-[13.5px] font-semibold">Hey {adminName} 👋</p>
                   <p className="text-[12.5px] text-muted-foreground">MarkBot here — allegedly the greatest recruitment assistant ever built (Mark’s words, not mine). How can I help you today?</p>
                 </div>
-                {starters.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {starters.map((s) => (
-                      <button key={s.text} onClick={() => send(s.text)}
-                        className="text-[11px] px-3 py-1 rounded-full border hover:bg-muted transition-colors">
-                        {s.text}
-                      </button>
-                    ))}
-                  </div>
-                )}
                 <div className="flex flex-wrap justify-center gap-2">
                   <button
                     onClick={() => { setInput('JD '); setTimeout(() => inputRef.current?.focus(), 50); }}
