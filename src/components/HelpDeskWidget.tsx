@@ -69,10 +69,11 @@ export default function HelpDeskWidget() {
     <>
       {collapsed ? (
         <button
+          data-size="icon"
           aria-label="Show help desk"
           title="Show help desk"
           onClick={() => changeCollapsed(false)}
-          className="fixed bottom-4 right-0 z-50 flex h-14 w-9 items-center justify-center rounded-l-lg border border-r-0 bg-primary text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
+          className="fixed bottom-4 right-0 z-50 flex !h-14 w-9 items-center justify-center !rounded-l-lg border border-r-0 bg-primary text-primary-foreground !shadow-lg transition-colors hover:bg-primary/90"
         >
           <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
         </button>
@@ -164,10 +165,11 @@ export default function HelpDeskWidget() {
             </div>
           )}
           <button
+            data-size="icon"
             aria-label="Collapse help desk"
             title="Collapse help desk"
             onClick={() => changeCollapsed(true)}
-            className="fixed bottom-5 right-[4rem] z-50 flex h-12 w-8 items-center justify-center rounded-l-lg border border-r-0 bg-card text-foreground shadow-md transition-colors hover:bg-muted"
+            className="fixed bottom-5 right-[4rem] z-50 flex !h-12 w-8 items-center justify-center !rounded-l-lg border border-r-0 bg-card text-foreground !shadow-md transition-colors hover:bg-muted"
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
           </button>
