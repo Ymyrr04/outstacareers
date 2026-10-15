@@ -129,6 +129,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [context, setContext] = useState<Record<string, unknown> | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [stage, setStage] = useState(0);
   const [shownStage, setShownStage] = useState(0);
   const [prevShownStage, setPrevShownStage] = useState<number | null>(null);
@@ -434,7 +435,10 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                 onClick={() => { if (!showHistory) loadHistory(); setShowHistory((v) => !v); }} disabled={loading}>
                 <Clock className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Close" aria-label="Close" onClick={() => onOpenChange(false)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Minimize" aria-label="Minimize" onClick={() => setMinimized(true)}>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Close" aria-label="Close" onClick={() => { setMinimized(false); onOpenChange(false); }}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
