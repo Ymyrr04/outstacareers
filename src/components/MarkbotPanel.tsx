@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 import type { TabId } from '@/hooks/useTabPermissions';
 import { cn } from '@/lib/utils';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { MarkbotCandidateCards, type CandidateCardData } from '@/components/MarkbotCandidateCards';
 
 // Renders assistant markdown in the narrow panel: tight spacing, small headings, one-line list items.
@@ -130,6 +131,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [adminName, setAdminName] = useState('there');
   const [stage, setStage] = useState(0);
   const [shownStage, setShownStage] = useState(0);
   const [prevShownStage, setPrevShownStage] = useState<number | null>(null);
@@ -145,6 +147,15 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const requestRef = useRef<{ id: number; abort: AbortController; question: string; msgId: string } | null>(null);
+
+  // Greet the signed-in admin by name using the same name map the dashboard uses.
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (alive) setAdminName(getAdminDisplayName(user?.email, 'there'));
+    });
+    return () => { alive = false; };
+  }, []);
 
   // Snap or glide the newest message into view. Long distances (re-opening a
   // saved conversation, or a long answer) animate for seconds, so they jump
@@ -512,7 +523,10 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             )}
             {messages.length === 0 && !restoring && (
               <div className="text-center pt-8 space-y-4">
-                <p className="text-[12.5px] text-muted-foreground">Ask about candidates, notes, interviews and comments.</p>
+                <div className="space-y-1 px-2">
+                  <p className="text-[13.5px] font-semibold">Hey {adminName} 👋</p>
+                  <p className="text-[12.5px] text-muted-foreground">MarkBot here — allegedly the greatest recruitment assistant ever built (Mark’s words, not mine). How can I help you today?</p>
+                </div>
                 {starters.length > 0 && (
                   <div className="flex flex-wrap justify-center gap-2">
                     {starters.map((s) => (
