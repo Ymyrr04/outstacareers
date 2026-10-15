@@ -146,9 +146,25 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const requestRef = useRef<{ id: number; abort: AbortController; question: string; msgId: string } | null>(null);
 
+  // Snap or glide the newest message into view. Long distances (re-opening a
+  // saved conversation, or a long answer) animate for seconds, so they jump
+  // instead; short ones keep the gentle scroll.
+  const scrollToLatest = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    el.scrollTo({ top: el.scrollHeight, behavior: distance > el.clientHeight * 2 ? 'auto' : 'smooth' });
+  };
+
+  // Keep the newest message in view — on new messages and answers, and whenever
+  // the chat becomes visible again (re-opened from minimize, from closed, or
+  // back from the history list). The list only mounts when the panel is visible,
+  // so wait a beat for layout before scrolling.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, loading]);
+    if (!open || minimized) return;
+    const t = setTimeout(scrollToLatest, 80);
+    return () => clearTimeout(t);
+  }, [messages, loading, open, minimized, showHistory]);
 
   // Advance phrases on a timer: phrase 1 shows immediately, then every 5s the
   // next phrase. Holds at the last phrase until the answer arrives. Never
