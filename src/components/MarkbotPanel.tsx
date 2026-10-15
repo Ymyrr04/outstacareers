@@ -523,6 +523,13 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                     ))}
                   </div>
                 )}
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button
+                    onClick={() => { setInput('JD '); setTimeout(() => inputRef.current?.focus(), 50); }}
+                    className="text-[11px] px-3 py-1 rounded-full border hover:bg-muted transition-colors">
+                    Draft a job posting — type JD + role details
+                  </button>
+                </div>
               </div>
             )}
 
