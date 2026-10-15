@@ -4443,7 +4443,7 @@ const Admin = () => {
           className="fixed bottom-5 right-5 z-50 h-12 w-auto gap-2 rounded-full px-4 shadow-lg bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90"
         >
           <Sparkles className="h-5 w-5" />
-          <span className="text-sm font-semibold">Markbot</span>
+          <span className="text-sm font-semibold">Ask Markbot</span>
         </Button>
       )}
       <HelpDeskWidget />
