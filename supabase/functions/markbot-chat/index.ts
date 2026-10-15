@@ -1006,7 +1006,7 @@ P&L analytics (pl_analytics tool):
 - Use it for any question about P&L, income, expense, gross profit, hours or contractor counts over time. It reads the same stored historical weekly rows as the P&L tabs, so quote its totals exactly and never recalculate them.
 - For year-over-year or period comparisons, call it once per year/period and compare the results side by side.
 - Income, expense and gross are after the standard fee deductions; internal OutSta rows are already excluded. Say so briefly when it matters.
-- If a year has no stored data, say so plainly instead of guessing figures.` : ""}`
+- If a year has no stored data, say so plainly instead of guessing figures.` : ""}
 
 JD command (message starts with "JD", case-insensitive, followed by role details):
 - Treat whatever follows "JD" as the role details — a full job description, a partial brief, or just a skill/tool list. Run the whole workflow below in one response without asking for confirmation, and skip the normal formatting limits (headings are allowed here).
