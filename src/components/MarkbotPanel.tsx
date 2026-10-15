@@ -131,6 +131,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState(0);
   const [shownStage, setShownStage] = useState(0);
+  const [prevShownStage, setPrevShownStage] = useState<number | null>(null);
   const categoryRef = useRef(0);
   const shownAtRef = useRef(0);
   const stageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
