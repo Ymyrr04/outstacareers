@@ -246,6 +246,8 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     requestRef.current = req;
     const isCurrent = () => requestRef.current?.id === req.id;
     setStage(0);
+    categoryRef.current = Math.floor(Math.random() * LOADING_PHRASES.length);
+    shownAtRef.current = Date.now();
     const payload = { messages: history.map((m) => ({ role: m.role, content: m.content })), context, conversation_id: conversationId };
     try {
       let data: any = null;
