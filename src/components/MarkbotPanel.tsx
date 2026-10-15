@@ -310,7 +310,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     <>
       {open && (
         <div role="dialog" aria-label="Markbot AI"
-          className="fixed bottom-20 right-5 z-50 flex h-[min(600px,70vh)] w-[400px] max-w-[calc(100vw-2.5rem)] flex-col gap-0 overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl">
+          className="fixed bottom-0 right-0 z-50 flex h-[min(780px,91vh)] w-[400px] max-w-[calc(100vw-2.5rem)] flex-col gap-0 overflow-hidden rounded-tl-xl border bg-popover text-popover-foreground shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[hsl(var(--markbot))]" />
