@@ -112,6 +112,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [context, setContext] = useState<Record<string, unknown> | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState(0);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<{ id: string; title: string | null; updated_at: string | null }[]>([]);
@@ -205,11 +206,60 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     const req = { id: Date.now(), abort: new AbortController(), question, msgId };
     requestRef.current = req;
     const isCurrent = () => requestRef.current?.id === req.id;
+    setStage(0);
+    const payload = { messages: history.map((m) => ({ role: m.role, content: m.content })), context, conversation_id: conversationId };
     try {
-      const { data, error } = await supabase.functions.invoke('markbot-chat', {
-        body: { messages: history.map((m) => ({ role: m.role, content: m.content })), context, conversation_id: conversationId },
-        signal: req.abort.signal,
-      } as any);
+      let data: any = null;
+      let error: any = null;
+      let streamed = false;
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const token = sess.session?.access_token;
+        if (!token) throw new Error('no session');
+        const res = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/markbot-chat`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: JSON.stringify(payload),
+          signal: req.abort.signal,
+        });
+        if (!res.ok || !res.body || !(res.headers.get('Content-Type') ?? '').includes('text/event-stream')) throw new Error('stream unavailable');
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '';
+        let final: any = null;
+        while (!final) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let idx;
+          while ((idx = buf.indexOf('\n\n')) >= 0) {
+            const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
+            const line = chunk.split('\n').find((l) => l.startsWith('data:'));
+            if (!line) continue;
+            let ev: any;
+            try { ev = JSON.parse(line.slice(5).trim()); } catch { continue; }
+            if (ev.type === 'stage' && isCurrent()) setStage((s) => Math.max(s, Number(ev.stage) || 0));
+            else if (ev.type === 'done' || ev.type === 'error') { final = ev; break; }
+          }
+        }
+        if (!final) throw new Error('stream ended early');
+        streamed = true;
+        const { type, status: _s, ...rest } = final;
+        if (type === 'error') throw Object.assign(new Error(typeof rest.error === 'string' ? rest.error : 'Something went wrong'), { fromStream: true });
+        data = rest;
+      } catch (se: any) {
+        if (se?.fromStream) throw se;
+        if (req.abort.signal.aborted || !isCurrent()) return;
+        if (streamed) throw se;
+        // Streaming failed — fall back to the regular call.
+        const r = await supabase.functions.invoke('markbot-chat', { body: payload, signal: req.abort.signal } as any);
+        data = r.data; error = r.error;
+      }
       if (!isCurrent()) return;
       if (error) {
         let msg = error.message;
@@ -459,7 +509,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             {loading && (
               <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Markbot is thinking…
+                {`Stage ${stage} of 5`}
               </div>
             )}
           </div>

@@ -977,7 +977,7 @@ function collectCandidates(node: unknown, pool: Map<string, CandidateCard>, dept
   for (const v of Object.values(o)) if (v && typeof v === "object") collectCandidates(v, pool, depth + 1);
 }
 
-Deno.serve(async (req) => {
+async function handle(req: Request, emit: (stage: number) => void): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -1081,6 +1081,7 @@ Deno.serve(async (req) => {
       // ---- Retrieve ----
       // Retrieval query: current question + previous user message only (never assistant text), capped.
       const prevUser = [...saved].reverse().find((m) => m.role === "user");
+      emit(1);
       const searchText = [prevUser?.content, question.content].filter(Boolean).join("\n").slice(-RETRIEVAL_QUERY_MAX_CHARS);
       const emb = await gatewayFetch("/embeddings", apiKey, {
         model: EMBED_MODEL, input: [searchText], dimensions: EMBED_DIMENSIONS,
@@ -1136,6 +1137,8 @@ Deno.serve(async (req) => {
       ];
 
       let answer = "";
+      let aiCalls = 0;
+      const aiStage = () => { aiCalls++; emit(aiCalls === 1 ? 2 : aiCalls === 2 ? 4 : aiCalls === 3 ? 5 : 0); };
       for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
         // Final round: no tools are offered below, so the model must write its
         // answer from the tool results already gathered. Do not append a user
@@ -1143,6 +1146,7 @@ Deno.serve(async (req) => {
         // ("Requests ending with a model turn are not supported").
         // After the time budget, offer no tools so the model answers from gathered results.
         const finalRound = round === MAX_TOOL_ROUNDS || Date.now() - startedAt > TOOL_TIME_BUDGET_MS;
+        aiStage();
         const resp = await gatewayFetch("/chat/completions", apiKey, {
           model: CHAT_MODEL,
           messages: chatMessages,
@@ -1158,6 +1162,7 @@ Deno.serve(async (req) => {
         if (!calls?.length || finalRound) { answer = (msg?.content ?? "").trim(); break; }
 
         chatMessages.push({ role: "assistant", content: msg.content ?? "", tool_calls: calls });
+        emit(3);
         const results = await Promise.all(calls.map(async (call) => {
           const tool = offered.find((t) => t.name === call.function?.name);
           let result: unknown;
@@ -1191,6 +1196,7 @@ Deno.serve(async (req) => {
       // Fallback: the model sometimes returns nothing after many tool rounds. Re-ask once
       // with the tool results inlined as plain text (no tool turns), so it must write an answer.
       if (!answer && chatMessages.some((m) => m.role === "tool")) {
+        aiStage();
         const gathered = chatMessages.filter((m) => m.role === "tool").map((m, i) => `[Result ${i + 1}]\n${String(m.content).slice(0, 6000)}`).join("\n\n").slice(0, 60000);
         const resp = await gatewayFetch("/chat/completions", apiKey, {
           model: CHAT_MODEL, max_tokens: MAX_TOKENS,
@@ -1263,4 +1269,37 @@ Deno.serve(async (req) => {
     console.error("markbot-chat error:", e);
     return json({ error: e instanceof Error ? e.message : String((e as any)?.message ?? e) }, 500);
   }
+}
+
+// Clients sending "Accept: text/event-stream" get progress stages, then the same
+// JSON body as a final "done" (2xx) or "error" event. Others get plain JSON as before.
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS" || !(req.headers.get("Accept") ?? "").includes("text/event-stream")) {
+    return handle(req, () => {});
+  }
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      let last = 0, closed = false;
+      const send = (obj: unknown) => {
+        if (closed) return;
+        try { controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { closed = true; }
+      };
+      const emit = (stage: number) => { if (stage > last) { last = stage; send({ type: "stage", stage }); } };
+      try {
+        const res = await handle(req, emit);
+        let body: any = {};
+        try { body = await res.json(); } catch { body = { error: "Invalid response" }; }
+        send(res.ok ? { type: "done", ...body } : { type: "error", status: res.status, ...body });
+      } catch (e) {
+        send({ type: "error", status: 500, error: e instanceof Error ? e.message : String(e) });
+      } finally {
+        closed = true;
+        try { controller.close(); } catch { /* client gone */ }
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
+  });
 });
