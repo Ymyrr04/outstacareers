@@ -98,6 +98,23 @@ const formatDate = (d: string | null) => {
 
 const newId = () => Math.random().toString(36).slice(2);
 
+// Loading phrases: 5 categories × 5 stages. Category is picked at random per
+// question and stays fixed; the phrase follows the real stream stage.
+const LOADING_PHRASES: string[][] = [
+  ['thinking...', 'thinking harder...', 'questioning why he was created...', 'having a quarter-life crisis...', 'wondering if this counts as consciousness...'],
+  ['still figuring this out, bear with it...', 'double-checking it’s not making this up...', 'sweating a little...', 'hoping this answer is actually right...', 'consulting its notes (it has notes now)...'],
+  ['thinking...', 'thinking a little too long about this...', 'starting to sweat...', 'considering a career change...', 'really hoping you don’t notice this is taking forever...'],
+  ['still in training, cut it some slack...', 'learning on the job, literally...', 'hasn’t graduated yet, bear with it...', 'still a trainee, give it a sec...', 'contemplating why Mark created him and why he’s doing this job...'],
+  ['wondering why Mark made him do this...', 'questioning Mark’s life choices, and his own...', 'thinks Mark is slacking off and made him do the work instead...', 'having an existential moment about working for Mark...', 'convinced this is what Mark should be doing right now...'],
+];
+const VERB_START = /^(still|double|sweating|hoping|consulting|learning|hasn’t|contemplating|thinks|having|convinced)/;
+
+function loadingPhrase(category: number, stage: number): string {
+  if (stage < 1) return 'Markbot is thinking...';
+  const text = LOADING_PHRASES[category][Math.min(stage, 5) - 1];
+  return VERB_START.test(text) ? `Markbot ${text}` : `Markbot is ${text}`;
+}
+
 interface MarkbotPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
