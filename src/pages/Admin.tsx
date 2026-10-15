@@ -4440,9 +4440,10 @@ const Admin = () => {
           aria-label="Ask Markbot AI"
           title="Ask Markbot AI (Ctrl/Cmd+K)"
           onClick={() => setMarkbotOpen(true)}
-          className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full shadow-lg bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90"
+          className="fixed bottom-5 right-5 z-50 h-12 w-auto gap-2 rounded-full px-4 shadow-lg bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90"
         >
           <Sparkles className="h-5 w-5" />
+          <span className="text-sm font-semibold">Markbot</span>
         </Button>
       )}
       <HelpDeskWidget />
