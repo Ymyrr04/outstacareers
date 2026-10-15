@@ -21,4 +21,5 @@
 - [x] Tighten Markbot tool access: role requirements open with Jobs access; candidate status hides hiring-request links and assignment details per tab
 
 - [x] Read-only v2 CV scoring comparison on 10 applications (no ATS writes)
-- [ ] Standardise the assistant's user-facing name to "MarkBot Ai" across the dashboard, panel, help desk and Markbot replies
+- [x] Standardise the assistant's user-facing name to "MarkBot AI" across the dashboard, panel, help desk and Markbot replies
+- [x] Remove the Payoneer request link field from the contractor timesheet form and reword the support line, confirmation checkbox and reminder emails to drop Payoneer wording
