@@ -48,7 +48,7 @@ export const TAB_LABELS: Record<TabId, string> = {
   'outreach': 'Outreach',
   'workflow': 'Workflow',
   'internal-team': 'Internal Team',
-  'markbot': 'Markbot AI',
+  'markbot': 'MarkBot AI',
 };
 
 interface TabPermission {

@@ -88,13 +88,13 @@ export function RmResourcesCard() {
           if (error) { await supabase.storage.from('rm-resources').remove([path]); throw error; }
           if (existing.file_path) await supabase.storage.from('rm-resources').remove([existing.file_path]);
           existing.file_path = path;
-          toast({ title: `Replaced ${existing.title}`, description: 'Markbot will learn the new version within a few minutes.' });
+          toast({ title: `Replaced ${existing.title}`, description: 'MarkBot AI will learn the new version within a few minutes.' });
         } else {
           const { data: row, error } = await supabase.from('rm_resources')
             .insert({ title, ...fields, uploaded_by: user?.id }).select('id, title, file_path, file_name, created_at, char_count').single();
           if (error) { await supabase.storage.from('rm-resources').remove([path]); throw error; }
           if (row) known.push(row as Resource);
-          toast({ title: `Uploaded ${file.name}`, description: 'Markbot will learn it within a few minutes.' });
+          toast({ title: `Uploaded ${file.name}`, description: 'MarkBot AI will learn it within a few minutes.' });
         }
       } catch (e: any) {
         toast({ title: `Couldn't upload ${file.name}`, description: e.message, variant: 'destructive' });
@@ -118,7 +118,7 @@ export function RmResourcesCard() {
     const { error } = await supabase.from('rm_resources').delete().eq('id', r.id);
     if (error) return toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
     if (r.file_path) await supabase.storage.from('rm-resources').remove([r.file_path]);
-    toast({ title: 'Resource removed', description: 'Markbot will forget it shortly.' });
+    toast({ title: 'Resource removed', description: 'MarkBot AI will forget it shortly.' });
     load();
   };
 
@@ -137,7 +137,7 @@ export function RmResourcesCard() {
               <FileText className="h-5 w-5" /> RM Resources
               {!expanded && <span className="text-xs font-normal text-muted-foreground">({items.length})</span>}
             </CardTitle>
-            <CardDescription>Shared guides for recruitment managers. Every admin can open them, and Markbot uses them when answering.</CardDescription>
+            <CardDescription>Shared guides for recruitment managers. Every admin can open them, and MarkBot AI uses them when answering.</CardDescription>
           </div>
         </button>
         <Button onClick={() => input.current?.click()} disabled={busy}>
@@ -184,7 +184,7 @@ export function RmResourcesCard() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{toDelete?.title}"?</AlertDialogTitle>
-            <AlertDialogDescription>This removes the file for everyone and Markbot will stop using it.</AlertDialogDescription>
+            <AlertDialogDescription>This removes the file for everyone and MarkBot AI will stop using it.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

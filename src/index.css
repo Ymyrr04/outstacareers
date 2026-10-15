@@ -30,7 +30,7 @@ All colors MUST be HSL.
     --accent: 192 100% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --markbot: 190 92% 46%; /* #0ABEDF Markbot AI brand */
+    --markbot: 190 92% 46%; /* #0ABEDF MarkBot AI brand */
     --markbot-hover: 192 92% 40%; /* slightly darker teal for hover */
     --markbot-foreground: 0 0% 100%;
 
@@ -803,7 +803,7 @@ html:not(.dark) .admin-shell .list-row-chevron {
   color: hsl(var(--muted-foreground));
 }
 
-/* Markbot loading phrase crossfade (200ms); disabled for reduced motion */
+/* MarkBot AI loading phrase crossfade (200ms); disabled for reduced motion */
 @keyframes markbot-phrase-in {
   from { opacity: 0; }
   to { opacity: 1; }

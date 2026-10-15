@@ -19,7 +19,7 @@ export function MarkbotRulesCard() {
 
   useEffect(() => {
     supabase.from('markbot_rules').select('rules, updated_at').eq('id', 1).maybeSingle().then(({ data, error }) => {
-      if (error) toast({ title: 'Could not load Markbot rules', description: error.message, variant: 'destructive' });
+      if (error) toast({ title: 'Could not load MarkBot AI rules', description: error.message, variant: 'destructive' });
       setRules(data?.rules ?? ''); setSaved(data?.rules ?? ''); setUpdatedAt(data?.updated_at ?? null);
       setLoading(false);
     });
@@ -34,20 +34,20 @@ export function MarkbotRulesCard() {
     setSaving(false);
     if (error) { toast({ title: 'Could not save rules', description: error.message, variant: 'destructive' }); return; }
     setSaved(rules.trim()); setRules(rules.trim()); setUpdatedAt(now);
-    toast({ title: 'Markbot rules saved', description: 'They apply to every new answer, for every admin.' });
+    toast({ title: 'MarkBot AI rules saved', description: 'They apply to every new answer, for every admin.' });
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Markbot rules</CardTitle>
+        <CardTitle>MarkBot AI rules</CardTitle>
         <CardDescription>
-          Standing instructions Markbot follows in every conversation, for every admin. Write one per line in plain English — just keep adding new lines; saving never replaces what Markbot does on its own.
+          Standing instructions MarkBot AI follows in every conversation, for every admin. Write one per line in plain English — just keep adding new lines; saving never replaces what MarkBot AI does on its own.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <details className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-          <summary className="cursor-pointer font-medium text-foreground">What Markbot already always does (built in, can't be changed here)</summary>
+          <summary className="cursor-pointer font-medium text-foreground">What MarkBot AI already always does (built in, can't be changed here)</summary>
           <ul className="mt-2 list-disc space-y-1 pl-4">
             <li>Looks up real data before answering and quotes exact counts from its tools — it never recalculates totals.</li>
             <li>Names the author and date of any note, comment or excerpt it uses.</li>
@@ -65,7 +65,7 @@ export function MarkbotRulesCard() {
             <li>Uses Eastern Time and Monday–Sunday weeks, and always states the exact dates it used.</li>
             <li>Still answers using its lookups if the CV/notes search is slow, instead of failing.</li>
             <li>Remembers only the current conversation (last 20 messages); conversations are private per admin and kept for 90 days.</li>
-            <li>Only admins with Markbot AI switched on in Tab Permissions can use it (super admins always can).</li>
+            <li>Only admins with MarkBot AI switched on in Tab Permissions can use it (super admins always can).</li>
           </ul>
           <p className="mt-2">Your rules are added on top of these. If a rule conflicts with one of the above, the built-in one wins.</p>
         </details>

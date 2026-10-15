@@ -107,9 +107,9 @@ const LOADING_PHRASES: string[][] = [
 const VERB_START = /^(still|double|sweating|hoping|consulting|learning|hasn’t|contemplating|thinks|having|convinced)/;
 
 function loadingPhrase(category: number, stage: number): string {
-  if (stage < 1) return 'Markbot is thinking...';
+  if (stage < 1) return 'MarkBot AI is thinking...';
   const text = LOADING_PHRASES[category][Math.min(stage, 5) - 1];
-  return VERB_START.test(text) ? `Markbot ${text}` : `Markbot is ${text}`;
+  return VERB_START.test(text) ? `MarkBot AI ${text}` : `MarkBot AI is ${text}`;
 }
 
 interface MarkbotPanelProps {
@@ -364,7 +364,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
       ]);
     } catch (e) {
       if (!isCurrent()) return;
-      toast({ title: 'Markbot AI', description: e instanceof Error ? e.message : 'Something went wrong', variant: 'destructive' });
+      toast({ title: 'MarkBot AI', description: e instanceof Error ? e.message : 'Something went wrong', variant: 'destructive' });
     } finally {
       if (isCurrent()) { requestRef.current = null; setLoading(false); }
     }
@@ -439,22 +439,22 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
         <button
           type="button"
           onClick={() => setMinimized(false)}
-          aria-label="Expand Markbot AI"
+          aria-label="Expand MarkBot AI"
           className="fixed bottom-0 right-0 z-50 flex items-center gap-2 rounded-tl-xl border bg-popover px-4 py-2.5 text-popover-foreground shadow-2xl hover:bg-accent"
         >
           <Sparkles className="w-4 h-4 text-[hsl(var(--markbot))]" />
-          <span className="text-sm font-semibold">Markbot AI</span>
+          <span className="text-sm font-semibold">MarkBot AI</span>
           <ChevronUp className="w-4 h-4 text-muted-foreground" />
         </button>
       )}
       {open && !minimized && (
-        <div role="dialog" aria-label="Markbot AI"
+        <div role="dialog" aria-label="MarkBot AI"
           className="fixed bottom-0 right-0 z-50 flex h-[min(780px,91vh)] w-[440px] max-w-[calc(100vw-2.5rem)] flex-col gap-0 overflow-hidden rounded-tl-xl border bg-popover text-popover-foreground shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[hsl(var(--markbot))]" />
               <div>
-                <div className="text-sm font-semibold">Markbot AI</div>
+                <div className="text-sm font-semibold">MarkBot AI</div>
                 <div className="text-[11px] text-muted-foreground">Ask about your recruitment data</div>
               </div>
             </div>
@@ -624,7 +624,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
 
           <div className="border-t px-4 pt-3 pb-2">
             <div className="flex items-end gap-2">
-              <Textarea ref={inputRef} value={input} rows={1} placeholder="Ask Markbot AI…" disabled={loading}
+              <Textarea ref={inputRef} value={input} rows={1} placeholder="Ask MarkBot AI…" disabled={loading}
                 className="min-h-[38px] max-h-32 resize-none text-[12.5px]"
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {

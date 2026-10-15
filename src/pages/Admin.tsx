@@ -1794,10 +1794,10 @@ const Admin = () => {
                 size="sm"
                 className="markbot-button h-7 text-[11px] bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot-hover))]"
                 onClick={() => setMarkbotOpen(true)}
-                title="Ask Markbot AI (Ctrl/Cmd+K)"
+                title="Ask MarkBot AI (Ctrl/Cmd+K)"
               >
                 <Sparkles className="w-3 h-3 mr-1.5" />
-                Ask Markbot AI
+                Ask MarkBot AI
               </Button>
             )}
             <ThemeToggle />
