@@ -802,3 +802,28 @@ html:not(.dark) .admin-shell .list-row-chevron {
 .dark .gmail-compose-editor p.is-editor-empty:first-child::before {
   color: hsl(var(--muted-foreground));
 }
+
+/* Markbot loading phrase crossfade (200ms); disabled for reduced motion */
+@keyframes markbot-phrase-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes markbot-phrase-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.markbot-phrase-in {
+  animation: markbot-phrase-in 200ms ease-out;
+}
+.markbot-phrase-out {
+  animation: markbot-phrase-out 200ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .markbot-phrase-in,
+  .markbot-phrase-out {
+    animation: none;
+  }
+  .markbot-phrase-out {
+    display: none;
+  }
+}

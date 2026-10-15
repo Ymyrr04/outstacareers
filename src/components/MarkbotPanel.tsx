@@ -98,6 +98,23 @@ const formatDate = (d: string | null) => {
 
 const newId = () => Math.random().toString(36).slice(2);
 
+// Loading phrases: 5 categories × 5 stages. Category is picked at random per
+// question and stays fixed; the phrase follows the real stream stage.
+const LOADING_PHRASES: string[][] = [
+  ['thinking...', 'thinking harder...', 'questioning why he was created...', 'having a quarter-life crisis...', 'wondering if this counts as consciousness...'],
+  ['still figuring this out, bear with it...', 'double-checking it’s not making this up...', 'sweating a little...', 'hoping this answer is actually right...', 'consulting its notes (it has notes now)...'],
+  ['thinking...', 'thinking a little too long about this...', 'starting to sweat...', 'considering a career change...', 'really hoping you don’t notice this is taking forever...'],
+  ['still in training, cut it some slack...', 'learning on the job, literally...', 'hasn’t graduated yet, bear with it...', 'still a trainee, give it a sec...', 'contemplating why Mark created him and why he’s doing this job...'],
+  ['wondering why Mark made him do this...', 'questioning Mark’s life choices, and his own...', 'thinks Mark is slacking off and made him do the work instead...', 'having an existential moment about working for Mark...', 'convinced this is what Mark should be doing right now...'],
+];
+const VERB_START = /^(still|double|sweating|hoping|consulting|learning|hasn’t|contemplating|thinks|having|convinced)/;
+
+function loadingPhrase(category: number, stage: number): string {
+  if (stage < 1) return 'Markbot is thinking...';
+  const text = LOADING_PHRASES[category][Math.min(stage, 5) - 1];
+  return VERB_START.test(text) ? `Markbot ${text}` : `Markbot is ${text}`;
+}
+
 interface MarkbotPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -113,6 +130,11 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState(0);
+  const [shownStage, setShownStage] = useState(0);
+  const [prevShownStage, setPrevShownStage] = useState<number | null>(null);
+  const categoryRef = useRef(0);
+  const shownAtRef = useRef(0);
+  const stageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<{ id: string; title: string | null; updated_at: string | null }[]>([]);
@@ -127,6 +149,26 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Show the phrase for the real stage, holding each phrase at least 1s.
+  // Never advances on a timer and never goes backward.
+  useEffect(() => {
+    if (!loading) {
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+      stageTimerRef.current = null;
+      setShownStage(0);
+      setPrevShownStage(null);
+      return;
+    }
+    if (stage <= shownStage) return;
+    const hold = Math.max(0, 1000 - (Date.now() - shownAtRef.current));
+    stageTimerRef.current = setTimeout(() => {
+      shownAtRef.current = Date.now();
+      setPrevShownStage(shownStage > 0 ? shownStage : null);
+      setShownStage(stage);
+    }, hold);
+    return () => { if (stageTimerRef.current) clearTimeout(stageTimerRef.current); };
+  }, [stage, loading, shownStage]);
 
   useEffect(() => {
     if (open && !loading) setTimeout(() => inputRef.current?.focus(), 50);
@@ -207,6 +249,8 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     requestRef.current = req;
     const isCurrent = () => requestRef.current?.id === req.id;
     setStage(0);
+    categoryRef.current = Math.floor(Math.random() * LOADING_PHRASES.length);
+    shownAtRef.current = Date.now();
     const payload = { messages: history.map((m) => ({ role: m.role, content: m.content })), context, conversation_id: conversationId };
     try {
       let data: any = null;
@@ -509,7 +553,17 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             {loading && (
               <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {`Stage ${stage} of 5`}
+                <span className="relative inline-block">
+                  {prevShownStage !== null && prevShownStage !== shownStage && (
+                    <span key={`out-${prevShownStage}`} aria-hidden
+                      className="markbot-phrase-out absolute left-0 top-0 whitespace-nowrap">
+                      {loadingPhrase(categoryRef.current, prevShownStage)}
+                    </span>
+                  )}
+                  <span key={`in-${shownStage}`} className="markbot-phrase-in inline-block whitespace-nowrap">
+                    {loadingPhrase(categoryRef.current, shownStage)}
+                  </span>
+                </span>
               </div>
             )}
           </div>
