@@ -232,6 +232,55 @@ async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
   };
 }
 
+// ---- recruiter_funnel (mirrors the Recruitment Funnel admin + job filters) ----
+const FUNNEL_STATUSES = ["For Review", "Qualified", "For Interview", "SIV", "Pitch", "Client Interview", "Hired", "Reject", "Archive", "Archived"];
+async function recruiterFunnel(args: unknown, { sb }: ToolCtx) {
+  const a = (args ?? {}) as { admin?: string; job_filter?: string; role?: string; stage?: string };
+  const jobFilter = ["active", "all", "inactive"].includes(String(a.job_filter)) ? String(a.job_filter) : "active";
+  const { data: jobs, error } = await sb.from("jobs").select("title, assigned_admin_id, is_active");
+  if (error) throw error;
+  const isNumeric = (t: string) => /^\$?\d+(\.\d+)?$/.test(t.trim());
+  const activeTitles = new Set((jobs ?? []).filter((j: any) => j.is_active && j.title && !isNumeric(j.title)).map((j: any) => j.title));
+  const allTitles = new Set((jobs ?? []).filter((j: any) => j.title && !isNumeric(j.title)).map((j: any) => j.title));
+  let titles = jobFilter === "active" ? [...activeTitles] : jobFilter === "inactive" ? [...allTitles].filter((t) => !activeTitles.has(t)) : [...allTitles];
+  let adminLabel = "All Admins";
+  if (a.admin?.trim()) {
+    const ids = await adminIdsByName(sb, a.admin.slice(0, 100));
+    if (!ids.length) return { message: `No admin matched "${a.admin}".` };
+    const mine = new Set((jobs ?? []).filter((j: any) => ids.includes(j.assigned_admin_id)).map((j: any) => j.title));
+    titles = titles.filter((t) => mine.has(t));
+    adminLabel = (await Promise.all(ids.map((id) => authorName(sb, id)))).join(", ");
+  }
+  if (a.role?.trim()) { const k = a.role.trim().toLowerCase(); titles = titles.filter((t) => t.toLowerCase().includes(k)); }
+  if (!titles.length) return { admin: adminLabel, job_filter: jobFilter, roles: [], counts_by_stage: {}, total: 0 };
+  const rows: any[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error: e } = await sb.from("applicants_prescreen").select("id, full_name, status, job_title")
+      .in("status", FUNNEL_STATUSES).in("job_title", titles).order("id").range(from, from + 999);
+    if (e) throw e;
+    rows.push(...(data ?? []));
+    if ((data ?? []).length < 1000) break;
+  }
+  const counts: Record<string, number> = {};
+  const byRole: Record<string, Record<string, number>> = {};
+  for (const r of rows) {
+    const st = r.status === "Archived" ? "Archive" : r.status;
+    counts[st] = (counts[st] ?? 0) + 1;
+    (byRole[r.job_title] ??= {})[st] = (byRole[r.job_title][st] ?? 0) + 1;
+  }
+  const activeStages = ["For Review", "Qualified", "For Interview", "SIV", "Pitch", "Client Interview"];
+  const stage = a.stage?.trim().toLowerCase();
+  const listed = stage ? rows.filter((r) => String(r.status).toLowerCase() === stage).slice(0, 20).map((r) => ({ id: r.id, name: r.full_name, role: r.job_title })) : undefined;
+  return {
+    admin: adminLabel, job_filter: jobFilter, roles: titles,
+    counts_by_stage: counts,
+    active_in_funnel: activeStages.reduce((t, s2) => t + (counts[s2] ?? 0), 0),
+    counts_by_role: byRole,
+    ...(listed ? { candidates: listed } : {}),
+    note: "Same as the Recruitment Funnel with this admin and job filter selected: candidates are attributed to an admin through the jobs assigned to that admin. active_in_funnel = For Review through Client Interview (excludes Hired, Reject, Archive). Bench/Talent Pool are not admin-scoped.",
+  };
+}
+
 // ---- timesheet_status ----
 const INTERNAL_CLIENT_ID = "baadbf53-0ca9-4abb-9af1-28f41f415bf1"; // OutSta internal team, excluded like the P&L report
 const ymdUTC = (d: Date) => d.toISOString().slice(0, 10);
@@ -725,6 +774,21 @@ const TOOLS: MarkbotTool[] = [
       },
     },
     handler: pipelineSummary,
+  },
+  {
+    name: "recruiter_funnel",
+    description: "Recruitment Funnel counts for an admin/recruiter, exactly like selecting that admin and the Active/All/Inactive jobs filter on the funnel page. Candidates belong to an admin through the jobs assigned to that admin. Returns counts per funnel stage, active_in_funnel total, per-role counts, and optionally up to 20 candidates in one stage. Use this for questions like \"how many active applicants does Kristine have\".",
+    required_tab: "funnel",
+    parameters: {
+      type: "object",
+      properties: {
+        admin: { type: "string", description: "Admin's name (first name is fine). Omit for all admins." },
+        job_filter: { type: "string", description: "active (default), all, or inactive jobs" },
+        role: { type: "string", description: "Optional role title (partial)" },
+        stage: { type: "string", description: "Optional stage to list candidates from, e.g. For Review" },
+      },
+    },
+    handler: recruiterFunnel,
   },
   {
     name: "timesheet_status",
