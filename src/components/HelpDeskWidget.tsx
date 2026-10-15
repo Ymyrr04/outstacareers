@@ -55,6 +55,10 @@ export default function HelpDeskWidget({ hidden = false }: { hidden?: boolean })
       .then(() => undefined);
   };
 
+  // While Markbot is open the help desk (including its toggle tab) is hidden
+  // entirely so the chat panel sits flush in the bottom-right corner.
+  if (hidden) return null;
+
   return (
     <>
       {collapsed ? (
