@@ -509,7 +509,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             {loading && (
               <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {stage > 0 ? `Stage ${stage} of 5` : 'Stage 0 of 5'}
+                {`Stage ${stage} of 5`}
               </div>
             )}
           </div>
