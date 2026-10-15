@@ -529,6 +529,11 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                     className="text-[11px] px-3 py-1 rounded-full border hover:bg-muted transition-colors">
                     Draft a job posting — type JD + role details
                   </button>
+                  <button
+                    onClick={() => { setInput('ready '); setTimeout(() => inputRef.current?.focus(), 50); }}
+                    className="text-[11px] px-3 py-1 rounded-full border hover:bg-muted transition-colors">
+                    Candidate profile — type ready + details
+                  </button>
                 </div>
               </div>
             )}
