@@ -1,5 +1,6 @@
 // Markbot AI: answers admin questions from the knowledge index, limited to tabs the caller can view.
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import { queryData, queryDataSpec, DATASETS } from "./query-data.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.95.0";
 import { z } from "npm:zod@3.23.8";
 import { authorName, adminIdsByName } from "./authors.ts";
@@ -56,6 +57,7 @@ type MarkbotTool = {
   alt_tabs?: string[]; // any of these tabs also grants access to the tool
   parameters: Record<string, unknown>; // JSON schema for the tool arguments
   handler: (args: unknown, ctx: ToolCtx) => Promise<unknown>;
+  spec?: (tabs: string[]) => { description: string; parameters: Record<string, unknown> }; // per-admin description/schema
 };
 // A tool is available when its required_tab is allowed, or any of its alt_tabs is.
 const toolAllowed = (t: MarkbotTool, tabs: string[]) =>
@@ -836,6 +838,15 @@ const TOOLS: MarkbotTool[] = [
     },
     handler: getRoleRequirements,
   },
+  {
+    name: "query_data",
+    description: "Flexible read-only lookup over ATS data.",
+    required_tab: "__none__",
+    alt_tabs: [...new Set(Object.values(DATASETS).flatMap((d) => d.tabs))],
+    parameters: {},
+    spec: queryDataSpec,
+    handler: queryData,
+  },
 ];
 
 class GatewayError extends Error {
@@ -969,7 +980,8 @@ Candidate status (candidate_status tool):
 
 Tool numbers:
 - When a tool returns counts or totals, quote them exactly as given. Never add, subtract or recalculate them, and do not use "at least" for tool numbers.
-- Always state which week or filter the numbers are for.${allowed.includes("applicants") ? `
+- Always state which week or filter the numbers are for.
+- Use the specialised tools first when they fit; for anything else about data in the user's areas, use query_data (count, group or list) rather than saying you can't check. If a question is about an area the user cannot see, reply with the no-access line above and never call a tool for it.${allowed.includes("applicants") ? `
 
 Finding candidates (find_candidates tool):
 - Call find_candidates directly; don't ask the user to pick statuses first. Use query for skills, experience or anything descriptive (e.g. "QuickBooks cleanup"); use role_keywords only for short role names (e.g. bookkeeper, paralegal), and you may set both.
@@ -1216,7 +1228,7 @@ async function handle(req: Request, emit: (stage: number) => void): Promise<Resp
           messages: chatMessages,
           max_tokens: MAX_TOKENS,
           ...(offered.length && !finalRound
-            ? { tools: offered.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
+            ? { tools: offered.map((t) => ({ type: "function", function: { name: t.name, ...(t.spec ? t.spec(allowedTabs) : { description: t.description, parameters: t.parameters }) } })) }
             : {}),
         });
         promptTokens += resp?.usage?.prompt_tokens ?? 0;
