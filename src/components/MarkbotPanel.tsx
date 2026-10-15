@@ -7,7 +7,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -309,13 +308,16 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-[400px] sm:max-w-[400px] p-0 flex flex-col gap-0 [&>button]:hidden">
+      {open && (
+        <div role="dialog" aria-label="Markbot AI"
+          className="fixed bottom-[8.5rem] right-5 z-50 flex h-[min(600px,70vh)] w-[400px] max-w-[calc(100vw-2.5rem)] flex-col gap-0 overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[hsl(var(--markbot))]" />
-              <SheetTitle className="text-sm font-semibold">Markbot AI</SheetTitle>
-              <SheetDescription className="sr-only">Ask questions about your recruitment data</SheetDescription>
+              <div>
+                <div className="text-sm font-semibold">Markbot AI</div>
+                <div className="text-[11px] text-muted-foreground">Ask about your recruitment data</div>
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-7 w-7" title="New chat" aria-label="New chat"
@@ -485,8 +487,8 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             </div>
             <p className="text-[10px] text-muted-foreground mt-1.5">Questions are logged to improve answers.</p>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
         <AlertDialogContent>
