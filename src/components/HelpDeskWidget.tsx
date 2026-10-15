@@ -169,7 +169,7 @@ export default function HelpDeskWidget() {
             aria-label="Collapse help desk"
             title="Collapse help desk"
             onClick={() => changeCollapsed(true)}
-            className="fixed bottom-5 right-[4rem] z-50 flex !h-12 w-8 items-center justify-center !rounded-l-lg border border-r-0 bg-card text-foreground !shadow-md transition-colors hover:bg-muted"
+            className="fixed bottom-5 right-[4.5rem] z-50 flex !h-12 w-8 items-center justify-center !rounded-l-lg border border-r-0 bg-card text-foreground !shadow-md transition-colors hover:bg-muted"
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
           </button>
