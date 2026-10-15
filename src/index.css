@@ -225,6 +225,9 @@ html:not(.dark) .admin-shell .admin-header button {
 html:not(.dark) .admin-shell .admin-header button:hover {
   background: hsl(var(--brand-surface));
 }
+html:not(.dark) .admin-shell .admin-header button.markbot-button:hover {
+  background: hsl(var(--markbot-hover));
+}
 html:not(.dark) .admin-shell .admin-divider {
   width: 1px; align-self: stretch; background: hsl(var(--brand-border));
 }
