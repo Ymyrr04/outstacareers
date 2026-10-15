@@ -149,6 +149,24 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Show the phrase for the real stage, holding each phrase at least 1s.
+  // Never advances on a timer and never goes backward.
+  useEffect(() => {
+    if (!loading) {
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+      stageTimerRef.current = null;
+      setShownStage(0);
+      return;
+    }
+    if (stage <= shownStage) return;
+    const hold = Math.max(0, 1000 - (Date.now() - shownAtRef.current));
+    stageTimerRef.current = setTimeout(() => {
+      shownAtRef.current = Date.now();
+      setShownStage(stage);
+    }, hold);
+    return () => { if (stageTimerRef.current) clearTimeout(stageTimerRef.current); };
+  }, [stage, loading, shownStage]);
+
   useEffect(() => {
     if (open && !loading) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open, loading]);
