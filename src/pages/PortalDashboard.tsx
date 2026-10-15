@@ -2503,11 +2503,9 @@ const PortalDashboard = () => {
 
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Please attach your Payoneer request link here</Label>
-                <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Paste your Payoneer payment request link" />
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p>
-                    Having issues submitting your Payoneer request? Contact admin via WhatsApp:{' '}
+                    If you have any issues submitting your weekly timesheet, contact admin via WhatsApp:{' '}
                     <a href="https://wa.me/639982326001" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
                       +63 998 232 6001
                     </a>
