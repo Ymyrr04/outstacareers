@@ -164,6 +164,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     const hold = Math.max(0, 1000 - (Date.now() - shownAtRef.current));
     stageTimerRef.current = setTimeout(() => {
       shownAtRef.current = Date.now();
+      setPrevShownStage(shownStage > 0 ? shownStage : null);
       setShownStage(stage);
     }, hold);
     return () => { if (stageTimerRef.current) clearTimeout(stageTimerRef.current); };
