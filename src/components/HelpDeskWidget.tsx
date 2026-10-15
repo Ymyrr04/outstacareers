@@ -11,9 +11,6 @@ export default function HelpDeskWidget({ hidden = false }: { hidden?: boolean })
   // Starts hidden on every visit or login so the corner is clear by default.
   const [collapsed, setCollapsed] = useState(true);
 
-  // While Markbot is open the help desk (including its toggle tab) is hidden
-  // entirely so the chat panel sits flush in the bottom-right corner.
-  if (hidden) return null;
 
   const changeCollapsed = (next: boolean) => {
     setCollapsed(next);
