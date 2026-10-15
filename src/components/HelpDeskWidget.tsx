@@ -48,7 +48,7 @@ export default function HelpDeskWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-[8.5rem] right-5 z-50 flex max-h-[70vh] w-[360px] flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl">
+        <div className="fixed bottom-20 right-5 z-50 flex max-h-[70vh] w-[360px] flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl">
           <div className="flex items-center justify-between border-b bg-primary px-4 py-3 text-primary-foreground">
             <div>
               <div className="text-sm font-semibold">Help desk</div>
@@ -136,7 +136,7 @@ export default function HelpDeskWidget() {
         size="icon"
         aria-label="Help"
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-[4.75rem] right-5 z-50 h-12 w-12 rounded-full shadow-lg"
+        className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full shadow-lg"
       >
         {open ? <X className="h-5 w-5" /> : <HelpCircle className="h-6 w-6" />}
       </Button>
