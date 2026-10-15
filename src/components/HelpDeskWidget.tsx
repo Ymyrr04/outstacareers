@@ -5,8 +5,28 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { HELP_ARTICLES, HELP_TOPICS, HelpArticle, searchHelp } from '@/lib/helpArticles';
 
+const COLLAPSE_KEY = 'helpd…psed';
+
 export default function HelpDeskWidget() {
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(COLLAPSE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const changeCollapsed = (next: boolean) => {
+    setCollapsed(next);
+    try {
+      localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
+    } catch {
+      /* storage unavailable — keep in memory only */
+    }
+    if (next) setOpen(false);
+  };
+
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState<string | null>(null);
   const [article, setArticle] = useState<HelpArticle | null>(null);
@@ -47,99 +67,122 @@ export default function HelpDeskWidget() {
 
   return (
     <>
-      {open && (
-        <div className="fixed bottom-20 right-5 z-50 flex max-h-[70vh] w-[360px] flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl">
-          <div className="flex items-center justify-between border-b bg-primary px-4 py-3 text-primary-foreground">
-            <div>
-              <div className="text-sm font-semibold">Help desk</div>
-              <div className="text-[11px] opacity-90">How does something work? Ask here.</div>
-            </div>
-            <button aria-label="Close help" onClick={() => setOpen(false)} className="rounded p-1 hover:bg-primary-foreground/15">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+      {collapsed ? (
+        <button
+          data-size="icon"
+          aria-label="Show help desk"
+          title="Show help desk"
+          onClick={() => changeCollapsed(false)}
+          className="fixed bottom-4 right-0 z-50 flex !h-14 w-9 items-center justify-center !rounded-l-lg border border-r-0 bg-primary text-primary-foreground !shadow-lg transition-colors hover:bg-primary/90"
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+        </button>
+      ) : (
+        <>
+          {open && (
+            <div className="fixed bottom-20 right-5 z-50 flex max-h-[70vh] w-[360px] flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl">
+              <div className="flex items-center justify-between border-b bg-primary px-4 py-3 text-primary-foreground">
+                <div>
+                  <div className="text-sm font-semibold">Help desk</div>
+                  <div className="text-[11px] opacity-90">How does something work? Ask here.</div>
+                </div>
+                <button aria-label="Close help" onClick={() => setOpen(false)} className="rounded p-1 hover:bg-primary-foreground/15">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
-          {article ? (
-            <div className="flex-1 overflow-y-auto p-4">
-              <button onClick={() => setArticle(null)} className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                <ChevronLeft className="h-3 w-3" /> Back
-              </button>
-              <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{article.topic}</div>
-              <h3 className="mb-3 text-sm font-semibold">{article.question}</h3>
-              <div className="space-y-2 text-sm leading-relaxed">
-                {article.answer.map((p, i) => <p key={i}>{p}</p>)}
-              </div>
-              <div className="mt-4 flex items-center gap-2 border-t pt-3">
-                {feedbackGiven === article.id ? (
-                  <span className="text-xs text-muted-foreground">Thanks for the feedback!</span>
-                ) : (
-                  <>
-                    <span className="text-xs text-muted-foreground">Was this helpful?</span>
-                    <button aria-label="Yes, helpful" onClick={() => giveFeedback(true)} className="rounded p-1 hover:bg-muted">
-                      <ThumbsUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button aria-label="No, not helpful" onClick={() => giveFeedback(false)} className="rounded p-1 hover:bg-muted">
-                      <ThumbsDown className="h-3.5 w-3.5" />
-                    </button>
-                  </>
-                )}
-              </div>
-              {related.length > 0 && (
-                <div className="mt-5 border-t pt-3">
-                  <div className="mb-2 text-xs font-medium text-muted-foreground">Related</div>
-                  {related.map((r) => (
-                    <button key={r.id} onClick={() => setArticle(r)} className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs hover:bg-muted">
-                      {r.question} <ChevronRight className="h-3 w-3 shrink-0" />
-                    </button>
-                  ))}
+              {article ? (
+                <div className="flex-1 overflow-y-auto p-4">
+                  <button onClick={() => setArticle(null)} className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    <ChevronLeft className="h-3 w-3" /> Back
+                  </button>
+                  <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{article.topic}</div>
+                  <h3 className="mb-3 text-sm font-semibold">{article.question}</h3>
+                  <div className="space-y-2 text-sm leading-relaxed">
+                    {article.answer.map((p, i) => <p key={i}>{p}</p>)}
+                  </div>
+                  <div className="mt-4 flex items-center gap-2 border-t pt-3">
+                    {feedbackGiven === article.id ? (
+                      <span className="text-xs text-muted-foreground">Thanks for the feedback!</span>
+                    ) : (
+                      <>
+                        <span className="text-xs text-muted-foreground">Was this helpful?</span>
+                        <button aria-label="Yes, helpful" onClick={() => giveFeedback(true)} className="rounded p-1 hover:bg-muted">
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button aria-label="No, not helpful" onClick={() => giveFeedback(false)} className="rounded p-1 hover:bg-muted">
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {related.length > 0 && (
+                    <div className="mt-5 border-t pt-3">
+                      <div className="mb-2 text-xs font-medium text-muted-foreground">Related</div>
+                      {related.map((r) => (
+                        <button key={r.id} onClick={() => setArticle(r)} className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs hover:bg-muted">
+                          {r.question} <ChevronRight className="h-3 w-3 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <div className="border-b p-3">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. how do I send a contract?" className="pl-8" />
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {HELP_TOPICS.map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => { setTopic(topic === t ? null : t); setQuery(''); }}
+                          className={`rounded-full border px-2.5 py-0.5 text-[11px] ${topic === t && !query ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-2">
+                    {results.map((a) => (
+                      <button key={a.id} onClick={() => setArticle(a)} className="flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-muted">
+                        <span>{a.question}</span>
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      </button>
+                    ))}
+                    {query.trim() && results.length === 0 && (
+                      <p className="p-3 text-center text-xs text-muted-foreground">No answer found. Try different words or pick a topic above.</p>
+                    )}
+                    {!query.trim() && !topic && (
+                      <p className="p-3 text-center text-xs text-muted-foreground">Type a question or pick a topic.</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="border-b p-3">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. how do I send a contract?" className="pl-8" />
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {HELP_TOPICS.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => { setTopic(topic === t ? null : t); setQuery(''); }}
-                      className={`rounded-full border px-2.5 py-0.5 text-[11px] ${topic === t && !query ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-2">
-                {results.map((a) => (
-                  <button key={a.id} onClick={() => setArticle(a)} className="flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-muted">
-                    <span>{a.question}</span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  </button>
-                ))}
-                {query.trim() && results.length === 0 && (
-                  <p className="p-3 text-center text-xs text-muted-foreground">No answer found. Try different words or pick a topic above.</p>
-                )}
-                {!query.trim() && !topic && (
-                  <p className="p-3 text-center text-xs text-muted-foreground">Type a question or pick a topic.</p>
-                )}
-              </div>
-            </div>
           )}
-        </div>
+          <button
+            data-size="icon"
+            aria-label="Collapse help desk"
+            title="Collapse help desk"
+            onClick={() => changeCollapsed(true)}
+            className="fixed bottom-5 right-[4.5rem] z-50 flex !h-12 w-8 items-center justify-center !rounded-l-lg border border-r-0 bg-card text-foreground !shadow-md transition-colors hover:bg-muted"
+          >
+            <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+          </button>
+          <Button
+            size="icon"
+            aria-label="Help"
+            onClick={() => setOpen((o) => !o)}
+            className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full shadow-lg"
+          >
+            {open ? <X className="h-5 w-5" /> : <HelpCircle className="h-6 w-6" />}
+          </Button>
+        </>
       )}
-      <Button
-        size="icon"
-        aria-label="Help"
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full shadow-lg"
-      >
-        {open ? <X className="h-5 w-5" /> : <HelpCircle className="h-6 w-6" />}
-      </Button>
     </>
   );
 }
