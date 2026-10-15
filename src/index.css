@@ -31,6 +31,7 @@ All colors MUST be HSL.
     --accent-foreground: 0 0% 100%;
 
     --markbot: 190 92% 46%; /* #0ABEDF Markbot AI brand */
+    --markbot-hover: 192 92% 40%; /* slightly darker teal for hover */
     --markbot-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
@@ -223,6 +224,9 @@ html:not(.dark) .admin-shell .admin-header button {
 }
 html:not(.dark) .admin-shell .admin-header button:hover {
   background: hsl(var(--brand-surface));
+}
+html:not(.dark) .admin-shell .admin-header button.markbot-button:hover {
+  background: hsl(var(--markbot-hover));
 }
 html:not(.dark) .admin-shell .admin-divider {
   width: 1px; align-self: stretch; background: hsl(var(--brand-border));
