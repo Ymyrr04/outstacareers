@@ -53,7 +53,7 @@ export function MarkbotIndexCard() {
     try {
       setStats(await call({ action: 'stats' }));
     } catch (e) {
-      toast({ title: 'Could not load Markbot index status', description: (e as Error).message, variant: 'destructive' });
+      toast({ title: 'Could not load MarkBot AI index status', description: (e as Error).message, variant: 'destructive' });
     }
   }, [toast]);
 
@@ -97,7 +97,7 @@ export function MarkbotIndexCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Markbot index</CardTitle>
+        <CardTitle>MarkBot AI index</CardTitle>
         <CardDescription>What the knowledge assistant can search, and what is still waiting.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
