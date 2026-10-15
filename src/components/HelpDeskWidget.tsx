@@ -5,25 +5,14 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { HELP_ARTICLES, HELP_TOPICS, HelpArticle, searchHelp } from '@/lib/helpArticles';
 
-const COLLAPSE_KEY = 'helpd…psed';
 
 export default function HelpDeskWidget() {
   const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(COLLAPSE_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  // Starts hidden on every visit or login so the corner is clear by default.
+  const [collapsed, setCollapsed] = useState(true);
 
   const changeCollapsed = (next: boolean) => {
     setCollapsed(next);
-    try {
-      localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
-    } catch {
-      /* storage unavailable — keep in memory only */
-    }
     if (next) setOpen(false);
   };
 
