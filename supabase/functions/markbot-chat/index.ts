@@ -751,7 +751,7 @@ const TOOLS: MarkbotTool[] = [
     parameters: {
       type: "object",
       properties: {
-        statuses: { type: "array", items: { type: "string" }, description: "Exact status values, e.g. Bench, Talent Pool, Cold Talent Pool, Qualified, Hired, For Review, For Interview, Pitch, SIV, Client Interview, Reject, Archived" },
+        statuses: { type: "array", items: { type: "string" }, description: "Exact stored status values, e.g. Bench (shown on screen as 'Talent Pipeline'), Talent Pool (shown on screen as 'Bench'), Cold Talent Pool, Qualified, Hired, For Review, For Interview, Pitch, SIV, Client Interview, Reject, Archived" },
         role_keywords: { type: "array", items: { type: "string" }, description: "Words matched against job title and skills" },
         available_only: { type: "boolean", description: "Only candidates who answered available" },
         has_profile: { type: "boolean", description: "true = only with an RM profile, false = only without" },
@@ -985,7 +985,7 @@ Tool numbers:
 
 Finding candidates (find_candidates tool):
 - Call find_candidates directly; don't ask the user to pick statuses first. Use query for skills, experience or anything descriptive (e.g. "QuickBooks cleanup"); use role_keywords only for short role names (e.g. bookkeeper, paralegal), and you may set both.
-- Map words to exact status values before calling: "bench" = Bench; "talent pool" = Talent Pool (add Cold Talent Pool only if they say cold or all talent pool); "qualified" = Qualified; "hired" = Hired. Say which status values you used.
+- The ATS screens show some statuses under different names. Map what the admin says to the stored status value: "talent pipeline" = Bench; "bench" = Talent Pool; "cold talent pool"/"cold bench" = Cold Talent Pool (add it only if they say cold or all); "qualified" = Qualified; "hired" = Hired. In answers, use the screen names (Bench status shows as "Talent Pipeline", Talent Pool status shows as "Bench") and do not ask which they meant.
 - Quote the total exactly and say which filters were applied. The free-text query does not narrow the total: never describe total_matches as people matching the query. Only candidates with matched_query true are matches for it; if candidates_with_text_matching_query is 0, say no CVs, notes or profiles matched that text and don't present the others as matches.
 - Say how many of the listed candidates have an RM profile.
 - Present candidates as suggestions with reasons taken from the excerpts (name the author and date). The recruitment manager makes the decision.
