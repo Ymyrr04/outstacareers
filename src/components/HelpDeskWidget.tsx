@@ -72,9 +72,9 @@ export default function HelpDeskWidget() {
           aria-label="Show help desk"
           title="Show help desk"
           onClick={() => changeCollapsed(false)}
-          className="fixed bottom-4 right-0 z-50 flex h-14 w-7 items-center justify-center rounded-l-lg border border-r-0 bg-primary text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
+          className="fixed bottom-4 right-0 z-50 flex h-14 w-9 items-center justify-center rounded-l-lg border border-r-0 bg-primary text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
         </button>
       ) : (
         <>
@@ -163,6 +163,14 @@ export default function HelpDeskWidget() {
               )}
             </div>
           )}
+          <button
+            aria-label="Collapse help desk"
+            title="Collapse help desk"
+            onClick={() => changeCollapsed(true)}
+            className="fixed bottom-5 right-[4rem] z-50 flex h-12 w-8 items-center justify-center rounded-l-lg border border-r-0 bg-card text-foreground shadow-md transition-colors hover:bg-muted"
+          >
+            <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+          </button>
           <Button
             size="icon"
             aria-label="Help"
@@ -171,14 +179,6 @@ export default function HelpDeskWidget() {
           >
             {open ? <X className="h-5 w-5" /> : <HelpCircle className="h-6 w-6" />}
           </Button>
-          <button
-            aria-label="Collapse help desk"
-            title="Collapse help desk"
-            onClick={() => changeCollapsed(true)}
-            className="fixed bottom-6 right-[4.25rem] z-50 flex h-10 w-7 items-center justify-center rounded-l-lg border border-r-0 bg-muted text-muted-foreground shadow transition-colors hover:bg-muted/70"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
         </>
       )}
     </>
