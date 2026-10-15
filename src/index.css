@@ -31,6 +31,7 @@ All colors MUST be HSL.
     --accent-foreground: 0 0% 100%;
 
     --markbot: 190 92% 46%; /* #0ABEDF Markbot AI brand */
+    --markbot-hover: 192 92% 40%; /* slightly darker teal for hover */
     --markbot-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
