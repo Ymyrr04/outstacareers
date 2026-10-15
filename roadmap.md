@@ -21,3 +21,4 @@
 - [x] Tighten Markbot tool access: role requirements open with Jobs access; candidate status hides hiring-request links and assignment details per tab
 
 - [x] Read-only v2 CV scoring comparison on 10 applications (no ATS writes)
+- [ ] Standardise the assistant's user-facing name to "MarkBot Ai" across the dashboard, panel, help desk and Markbot replies
