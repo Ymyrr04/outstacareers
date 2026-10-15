@@ -157,6 +157,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
       if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
       stageTimerRef.current = null;
       setShownStage(0);
+      setPrevShownStage(null);
       return;
     }
     if (stage <= shownStage) return;
