@@ -130,6 +130,10 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState(0);
+  const [shownStage, setShownStage] = useState(0);
+  const categoryRef = useRef(0);
+  const shownAtRef = useRef(0);
+  const stageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<{ id: string; title: string | null; updated_at: string | null }[]>([]);
