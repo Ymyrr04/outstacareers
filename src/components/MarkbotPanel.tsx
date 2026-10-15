@@ -485,7 +485,6 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
               </Button>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1.5">Questions are logged to improve answers.</p>
           </div>
         </div>
       )}
