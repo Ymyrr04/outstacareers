@@ -553,7 +553,17 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             {loading && (
               <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {`Stage ${stage} of 5`}
+                <span className="relative inline-block">
+                  {prevShownStage !== null && prevShownStage !== shownStage && (
+                    <span key={`out-${prevShownStage}`} aria-hidden
+                      className="markbot-phrase-out absolute left-0 top-0 whitespace-nowrap">
+                      {loadingPhrase(categoryRef.current, prevShownStage)}
+                    </span>
+                  )}
+                  <span key={`in-${shownStage}`} className="markbot-phrase-in inline-block whitespace-nowrap">
+                    {loadingPhrase(categoryRef.current, shownStage)}
+                  </span>
+                </span>
               </div>
             )}
           </div>
