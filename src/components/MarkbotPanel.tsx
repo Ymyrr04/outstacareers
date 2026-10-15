@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2, Square, Pencil, ExternalLink } from 'lucide-react';
+import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2, Square, Pencil, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -129,6 +129,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [context, setContext] = useState<Record<string, unknown> | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [stage, setStage] = useState(0);
   const [shownStage, setShownStage] = useState(0);
   const [prevShownStage, setPrevShownStage] = useState<number | null>(null);
@@ -402,9 +403,21 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
 
   return (
     <>
-      {open && (
+      {open && minimized && (
+        <button
+          type="button"
+          onClick={() => setMinimized(false)}
+          aria-label="Expand Markbot AI"
+          className="fixed bottom-0 right-0 z-50 flex items-center gap-2 rounded-tl-xl border bg-popover px-4 py-2.5 text-popover-foreground shadow-2xl hover:bg-accent"
+        >
+          <Sparkles className="w-4 h-4 text-[hsl(var(--markbot))]" />
+          <span className="text-sm font-semibold">Markbot AI</span>
+          <ChevronUp className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
+      {open && !minimized && (
         <div role="dialog" aria-label="Markbot AI"
-          className="fixed bottom-0 right-0 z-50 flex h-[min(780px,91vh)] w-[400px] max-w-[calc(100vw-2.5rem)] flex-col gap-0 overflow-hidden rounded-tl-xl border bg-popover text-popover-foreground shadow-2xl">
+          className="fixed bottom-0 right-0 z-50 flex h-[min(780px,91vh)] w-[440px] max-w-[calc(100vw-2.5rem)] flex-col gap-0 overflow-hidden rounded-tl-xl border bg-popover text-popover-foreground shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[hsl(var(--markbot))]" />
@@ -422,7 +435,10 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                 onClick={() => { if (!showHistory) loadHistory(); setShowHistory((v) => !v); }} disabled={loading}>
                 <Clock className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Close" aria-label="Close" onClick={() => onOpenChange(false)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Minimize" aria-label="Minimize" onClick={() => setMinimized(true)}>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Close" aria-label="Close" onClick={() => { setMinimized(false); onOpenChange(false); }}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
