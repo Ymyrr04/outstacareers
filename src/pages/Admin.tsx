@@ -1792,7 +1792,7 @@ const Admin = () => {
             {canUseMarkbot && (
               <Button
                 size="sm"
-                className="h-7 text-[11px] bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90"
+                className="h-7 text-[11px] bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot-hover))]"
                 onClick={() => setMarkbotOpen(true)}
                 title="Ask Markbot AI (Ctrl/Cmd+K)"
               >
