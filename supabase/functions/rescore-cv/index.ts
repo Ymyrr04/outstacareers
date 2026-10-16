@@ -333,6 +333,8 @@ SCORING RULES (total = 100):
 
 MISSING INFORMATION: If the CV or job posting lacks detail to score a category confidently, score conservatively and say so in missing_information so a human can verify.
 
+TODAY'S DATE: ${new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'long',day:'numeric'}).format(new Date())} (US Eastern). Judge every CV date against this date. Dates up to today are past, not future; "Present" or an end date after today means a current or planned role and is not a red flag by itself.
+
 RED FLAGS: List these when present: frequent short tenures with no explanation, unexplained gaps over 6 months, inconsistent or implausible dates, vague or unverifiable claims. Red flags are for human review only. They never change the score or ranking.
 
 RANKING STATUS (total_score only):
