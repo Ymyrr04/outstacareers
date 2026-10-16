@@ -2,6 +2,34 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/logAiUsage.ts";
 
+const PRECHECK_FIELDS = 'home_office, noise_canceling_headset, laptop_or_pc, good_internet, internet_speed, power_backup, can_work_40_50, us_timezone_ok, start_availability, has_experience, currently_working, location, employment_status, last_day_with_employer, pre_screening_responses';
+// deno-lint-ignore no-explicit-any
+function formatPrecheck(a: any): string {
+  if (!a) return 'Not provided';
+  const yn = (v: unknown) => v === true ? 'Yes' : v === false ? 'No' : (v == null || v === '' ? 'Not answered' : String(v));
+  const ps = a.pre_screening_responses || {};
+  return [
+    `Home office: ${yn(a.home_office)}`,
+    `Noise-canceling headset: ${yn(a.noise_canceling_headset)}`,
+    `Laptop or PC: ${yn(a.laptop_or_pc)}`,
+    `Good internet: ${yn(a.good_internet)}`,
+    `Internet speed: ${yn(a.internet_speed)}`,
+    `Power backup: ${yn(a.power_backup)}`,
+    `Can work 40-50 hrs/week: ${yn(a.can_work_40_50)}`,
+    `OK with US timezone hours: ${yn(a.us_timezone_ok)}`,
+    `Start availability: ${yn(a.start_availability)}`,
+    `Has relevant experience: ${yn(a.has_experience)}`,
+    `Currently working: ${yn(a.currently_working)}`,
+    `Employment status: ${yn(a.employment_status)}`,
+    `Last day with employer: ${yn(a.last_day_with_employer)}`,
+    `Location: ${yn(a.location)}`,
+    `Read job description: ${yn(ps.read_job_description)}`,
+    `Aware of rate: ${yn(ps.aware_of_rate)}`,
+    `Agrees with rate: ${yn(ps.agrees_with_rate)}`,
+    `Applying elsewhere: ${yn(ps.applying_elsewhere)}`,
+  ].join('\n');
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -171,7 +199,7 @@ serve(async (req) => {
     // Fetch applicant data
     const { data: applicant, error: fetchError } = await supabase
       .from('applicants_prescreen')
-      .select('id, full_name, job_title, cv_text, cv_file_url, job_id, file_hash, ai_summary')
+      .select(`id, full_name, job_title, cv_text, cv_file_url, job_id, file_hash, ai_summary, ${PRECHECK_FIELDS}`)
       .eq('id', applicant_id)
       .single();
 
@@ -331,7 +359,7 @@ SCORING RULES (total = 100):
 - 2-3: Partial information, reasonable inference possible
 - 0-1: No information; do not assume readiness
 
-MISSING INFORMATION: If the CV or job posting lacks detail to score a category confidently, score conservatively and say so in missing_information so a human can verify.
+MISSING INFORMATION: If the CV or job posting lacks detail to score a category confidently, score conservatively and say so in missing_information so a human can verify. Never list anything already answered in the CANDIDATE PRECHECK ANSWERS (e.g. timezone, home office, internet, headset, availability); use those answers instead.
 
 TODAY'S DATE: ${new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'long',day:'numeric'}).format(new Date())} (US Eastern). Judge every CV date against this date. Dates up to today are past, not future; "Present" or an end date after today means a current or planned role and is not a red flag by itself.
 
@@ -372,6 +400,7 @@ Return ONLY valid JSON, no other text, in exactly this structure:
   "years_of_experience": <number or null>
 }`;
 
+    const precheckText = formatPrecheck(applicant);
     const userPrompt = `Evaluate this candidate's CV for the following job:
 
 JOB TITLE: ${applicant.job_title}
@@ -386,6 +415,9 @@ ${responsibilities?.length ? responsibilities.map((r, i) => `${i + 1}. ${r}`).jo
 
 CANDIDATE CV TEXT:
 ${cvText}
+
+CANDIDATE PRECHECK ANSWERS (already answered by the candidate on the application form):
+${precheckText}
 
 Return ONLY the JSON scoring object with detailed assessment_details and extracted metadata, no other text.`;
 
