@@ -126,15 +126,37 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   };
 
   const handleSave = async () => {
-    if (!content || content === '<p></p>') {
+    const isSiv = pending.newStatus === 'SIV';
+    const editorContent = content && content !== '<p></p>' ? content : '';
+    const hasAnswer = SIV_QUESTIONS.some((q) => sivAnswers[q] !== undefined);
+
+    if (isSiv) {
+      if (!hasAnswer && !editorContent) {
+        toast.error('Note cannot be empty');
+        return;
+      }
+    } else if (!editorContent) {
       toast.error('Note cannot be empty');
       return;
     }
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
+
+    let noteContent = editorContent;
+    if (isSiv) {
+      const items = SIV_QUESTIONS.map((q) => {
+        const answer = sivAnswers[q];
+        const shown = answer === undefined
+          ? 'Not answered'
+          : `<strong>${answer ? 'Yes' : 'No'}</strong>`;
+        return `<li>${q} — ${shown}</li>`;
+      }).join('');
+      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}</ul>${editorContent}`;
+    }
+
     const { error } = await supabase.from('applicant_notes').insert({
       applicant_id: pending.applicantId,
-      content,
+      content: noteContent,
       created_by: user?.id || null,
     });
     if (error) {
