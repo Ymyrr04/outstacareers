@@ -46,6 +46,7 @@ import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addMinutes, format } from 'date-fns';
 import { StageEmailConfirmDialog, type PendingStageEmail } from '@/components/StageEmailConfirmDialog';
 import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDialog';
+import { cancelStageMove } from '@/lib/stageMoveCancellation';
 import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
 import { useAuth } from '@/hooks/useAuth';
@@ -196,7 +197,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [showHiredDialog, setShowHiredDialog] = useState(false);
   const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
   const [pendingStageEmail, setPendingStageEmail] = useState<
-    (PendingStageEmail & { applicantId: string; templateId: string }) | null
+    (PendingStageEmail & { applicantId: string; templateId: string; previousStatus: string }) | null
   >(null);
   const [stageNote, setStageNote] = useState<PendingStageNote | null>(null);
 
@@ -782,9 +783,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     // Ask the admin to review/edit the stage email before sending
     const payload = buildStatusEmail(candidate, newStage);
     if (payload) {
-      setPendingStageEmail(payload);
+      setPendingStageEmail({ ...payload, previousStatus: previousStage });
     } else {
-      setStageNote({ applicantId: candidate.id, candidateName: candidate.full_name, newStatus: newStage });
+      setStageNote({ applicantId: candidate.id, candidateName: candidate.full_name, newStatus: newStage, previousStatus: previousStage });
     }
   }, [updateCandidateStageInState, buildStatusEmail]);
 
@@ -1829,6 +1830,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               applicantId: pendingStageEmail.applicantId,
               candidateName: pendingStageEmail.candidateName,
               newStatus: pendingStageEmail.newStatus,
+              previousStatus: pendingStageEmail.previousStatus,
             });
             setPendingStageEmail(null);
           }
@@ -1845,6 +1847,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
             applicantId: pendingStageEmail.applicantId,
             candidateName: pendingStageEmail.candidateName,
             newStatus: pendingStageEmail.newStatus,
+            previousStatus: pendingStageEmail.previousStatus,
           });
           setPendingStageEmail(null);
         }}
@@ -1853,6 +1856,17 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       <StageNoteDialog
         pending={stageNote}
         onOpenChange={(open) => { if (!open) setStageNote(null); }}
+        onCancel={async () => {
+          if (!stageNote) return;
+          await cancelStageMove(stageNote, async (id, expectedStatus, originalStatus) => {
+            const { data, error } = await supabase.from('applicants_prescreen')
+              .update({ status: originalStatus }).eq('id', id).eq('status', expectedStatus)
+              .select('id').maybeSingle();
+            if (error) throw error;
+            return !!data;
+          }, updateCandidateStageInState);
+          toast.success(`${stageNote.candidateName} returned to ${stageNote.previousStatus}`);
+        }}
       />
 
 
