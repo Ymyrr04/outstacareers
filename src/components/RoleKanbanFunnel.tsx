@@ -27,7 +27,7 @@ import { LinkCandidateCommentDialog } from '@/components/LinkCandidateCommentDia
 import { LinkedClientsBadge } from '@/components/LinkedClientsBadge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { candidateMatchesPipelineJobs, filterPipelineJobs, isInactivePipelineCandidate, pipelineJobNeedsAdmin, resolvePipelineRole, type PipelineJob } from '@/lib/rolePipelineJobs';
+import { candidateMatchesPipelineJobs, candidateRoleLabel, filterPipelineJobs, isInactivePipelineCandidate, pipelineJobNeedsAdmin, resolvePipelineRole, type PipelineJob } from '@/lib/rolePipelineJobs';
 import { priorityGate } from '@/lib/priorityGate';
 import { toast } from 'sonner';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
@@ -1789,6 +1789,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                               setDropTargetStage(null);
                             }}
                             showRoleLabel={selectedRole === ALL_ROLES_KEY}
+                            roleLabel={candidateRoleLabel(candidate, jobs)}
                             isInactiveRole={jobFilter === 'all' && isInactivePipelineCandidate(candidate, jobs)}
                             isSelected={selectedIds.has(candidate.id)}
                             onSelectToggle={() => toggleCardSelection(candidate)}
@@ -1943,6 +1944,7 @@ interface CandidateCardProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   showRoleLabel?: boolean;
+  roleLabel?: string;
   isInactiveRole?: boolean;
   isSelected?: boolean;
   onSelectToggle?: () => void;
@@ -1955,7 +1957,7 @@ interface CandidateCardProps {
   onReprofiled: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, roleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -2230,7 +2232,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
             {showRoleLabel && (
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <FileText className="w-2.5 h-2.5 shrink-0" />
-                <span className="truncate font-medium text-primary/80" title={candidate.job_title}>{candidate.job_title}</span>
+                <span className="truncate font-medium text-primary/80" title={roleLabel || candidate.job_title}>{roleLabel || candidate.job_title}</span>
                 {isInactiveRole && (
                   <Badge variant="outline" className="h-4 px-1 text-[9px] font-medium bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900 shrink-0">
                     Inactive
