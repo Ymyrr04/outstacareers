@@ -200,6 +200,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     (PendingStageEmail & { applicantId: string; templateId: string; previousStatus: string }) | null
   >(null);
   const [stageNote, setStageNote] = useState<PendingStageNote | null>(null);
+  // Moving a candidate to Pitch normally means pitching them to a client,
+  // so after the note is saved the Link to Client Pipeline dialog opens.
+  const [linkPipelineTarget, setLinkPipelineTarget] = useState<{ applicantId: string; candidateName: string } | null>(null);
 
 
   // Build the email payload for a status change (matching Admin.tsx behavior).
@@ -1856,6 +1859,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       <StageNoteDialog
         pending={stageNote}
         onOpenChange={(open) => { if (!open) setStageNote(null); }}
+        onSaved={() => {
+          if (stageNote?.newStatus === 'Pitch') {
+            setLinkPipelineTarget({ applicantId: stageNote.applicantId, candidateName: stageNote.candidateName });
+          }
+        }}
         onCancel={async () => {
           if (!stageNote) return;
           await cancelStageMove(stageNote, async (id, expectedStatus, originalStatus) => {
@@ -1868,6 +1876,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
           toast.success(`${stageNote.candidateName} returned to ${stageNote.previousStatus}`);
         }}
       />
+
+      {linkPipelineTarget && (
+        <LinkCandidateCommentDialog
+          open
+          onOpenChange={(open) => { if (!open) setLinkPipelineTarget(null); }}
+          applicantId={linkPipelineTarget.applicantId}
+          applicantName={linkPipelineTarget.candidateName}
+        />
+      )}
 
 
 
