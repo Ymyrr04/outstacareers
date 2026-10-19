@@ -1877,6 +1877,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         }}
       />
 
+      {linkPipelineTarget && (
+        <LinkCandidateCommentDialog
+          open
+          onOpenChange={(open) => { if (!open) setLinkPipelineTarget(null); }}
+          applicantId={linkPipelineTarget.applicantId}
+          applicantName={linkPipelineTarget.candidateName}
+        />
+      )}
+
 
 
 
