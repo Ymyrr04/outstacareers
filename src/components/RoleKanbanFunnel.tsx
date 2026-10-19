@@ -1859,6 +1859,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       <StageNoteDialog
         pending={stageNote}
         onOpenChange={(open) => { if (!open) setStageNote(null); }}
+        onSaved={() => {
+          if (stageNote?.newStatus === 'Pitch') {
+            setLinkPipelineTarget({ applicantId: stageNote.applicantId, candidateName: stageNote.candidateName });
+          }
+        }}
         onCancel={async () => {
           if (!stageNote) return;
           await cancelStageMove(stageNote, async (id, expectedStatus, originalStatus) => {
