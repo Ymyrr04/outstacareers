@@ -200,6 +200,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     (PendingStageEmail & { applicantId: string; templateId: string; previousStatus: string }) | null
   >(null);
   const [stageNote, setStageNote] = useState<PendingStageNote | null>(null);
+  // Moving a candidate to Pitch normally means pitching them to a client,
+  // so after the note is saved the Link to Client Pipeline dialog opens.
+  const [linkPipelineTarget, setLinkPipelineTarget] = useState<{ applicantId: string; candidateName: string } | null>(null);
 
 
   // Build the email payload for a status change (matching Admin.tsx behavior).
