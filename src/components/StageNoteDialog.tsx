@@ -105,7 +105,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Pr
     setSivAnswers({});
     setSivText({});
     setQuestions([]);
-    setAddToCalendar(defaultsToCalendarOnMove(pending.previousStatus));
+    setAddToCalendar(defaultsToCalendarOnMove(pending.previousStatus, pending.newStatus));
     setCalDate(todayET());
     setCalStart('10:00');
     setCalEnd('11:00');
