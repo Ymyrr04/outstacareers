@@ -281,6 +281,13 @@
       "when": 1792000052056,
       "tag": "0039_deprecate_interview_rescore_staging",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792431794727,
+      "tag": "0040_create_stage_note_templates",
+      "breakpoints": true
     }
   ]
 }
