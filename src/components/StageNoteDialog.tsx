@@ -214,7 +214,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Pr
         const shown = value ? `<strong>${escapeNoteText(value)}</strong>` : 'Not answered';
         return `<li>${q.label} — ${shown}</li>`;
       }).join('');
-      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}${textItems}</ul>${questionAnswersHtml(questions)}${editorContent}`;
+      noteContent = `<p><strong>Hire Readiness Recheck</strong></p><ul>${items}${textItems}</ul>${questionAnswersHtml(questions)}${editorContent}`;
     } else if (questions.length) {
       noteContent = `${questionAnswersHtml(questions)}${editorContent}`;
     }
@@ -258,7 +258,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Pr
 
         {pending.newStatus === 'SIV' && (
           <div className="rounded-md border p-3 space-y-2.5">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">SIV Screening</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Hire Readiness Recheck</p>
             {SIV_QUESTIONS.map((q) => {
               const answer = sivAnswers[q];
               return (
@@ -317,7 +317,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Pr
         {questions.length > 0 && <div className="space-y-3">
           {questions.map((q, index) => <div key={index} className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <Input aria-label={`Question ${index + 1}`} placeholder="Screening question" value={q.question} maxLength={1000}
+              <Input aria-label={`Question ${index + 1}`} placeholder="Final Interview Question" value={q.question} maxLength={1000}
                 onChange={e => setQuestions(prev => prev.map((item, i) => i === index ? { ...item, question: e.target.value } : item))} />
               <Button type="button" size="icon" variant="ghost" title="Remove question" aria-label={`Remove question ${index + 1}`} onClick={() => setQuestions(prev => prev.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button>
             </div>

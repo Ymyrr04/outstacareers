@@ -16,5 +16,5 @@ export function questionAnswersHtml(questions: TemplateQuestion[]): string {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\n/g, '<br />');
   const items = questions.filter(({ question }) => question.trim()).map(({ question, answer }) =>
     `<li>${escape(question.trim())} — ${answer.trim() ? `<strong>${escape(answer.trim())}</strong>` : 'Not answered'}</li>`);
-  return items.length ? `<p><strong>Screening questions</strong></p><ul>${items.join('')}</ul>` : '';
+  return items.length ? `<p><strong>Final Interview Questions</strong></p><ul>${items.join('')}</ul>` : '';
 }
