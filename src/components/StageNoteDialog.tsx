@@ -16,6 +16,15 @@ import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
 import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
 
+function escapeNoteText(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, '<br />');
+}
+
 export interface PendingStageNote {
   applicantId: string;
   candidateName: string;
@@ -34,7 +43,30 @@ const SIV_QUESTIONS = [
   'Are you still currently Employed or Rendering your notice?',
 ] as const;
 
+type SivTextField = 'start_availability' | 'upcoming_plans';
+
+const SIV_TEXT_QUESTIONS: {
+  field: SivTextField;
+  label: string;
+  helper: string;
+  placeholder: string;
+}[] = [
+  {
+    field: 'start_availability',
+    label: 'How soon can you start?',
+    helper: '',
+    placeholder: 'e.g., Immediately, 2 weeks notice',
+  },
+  {
+    field: 'upcoming_plans',
+    label: 'Do you have any plans for the next 3 months?',
+    helper: 'e.g. vacation, taking exams, or anything that could potentially affect your work schedule',
+    placeholder: "e.g., None, or 1-week vacation in September",
+  },
+];
+
 type SivAnswers = Partial<Record<string, boolean>>;
+type SivTextAnswers = Partial<Record<SivTextField, string>>;
 
 interface Props {
   pending: PendingStageNote | null;
@@ -46,6 +78,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [sivAnswers, setSivAnswers] = useState<SivAnswers>({});
+  const [sivText, setSivText] = useState<SivTextAnswers>({});
   const { admins } = useCalendarAdmins();
   const { notifyCalendarActivity } = useSlackNotifications();
 
@@ -64,6 +97,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     setContent('');
     setSaving(false);
     setSivAnswers({});
+    setSivText({});
     setAddToCalendar(false);
     setCalDate(todayET());
     setCalStart('10:00');
@@ -128,7 +162,9 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const handleSave = async () => {
     const isSiv = pending.newStatus === 'SIV';
     const editorContent = content && content !== '<p></p>' ? content : '';
-    const hasAnswer = SIV_QUESTIONS.some((q) => sivAnswers[q] !== undefined);
+    const hasAnswer =
+      SIV_QUESTIONS.some((q) => sivAnswers[q] !== undefined) ||
+      SIV_TEXT_QUESTIONS.some((q) => (sivText[q.field] ?? '').trim() !== '');
 
     if (isSiv) {
       if (!hasAnswer && !editorContent) {
@@ -151,7 +187,12 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
           : `<strong>${answer ? 'Yes' : 'No'}</strong>`;
         return `<li>${q} — ${shown}</li>`;
       }).join('');
-      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}</ul>${editorContent}`;
+      const textItems = SIV_TEXT_QUESTIONS.map((q) => {
+        const value = (sivText[q.field] ?? '').trim();
+        const shown = value ? `<strong>${escapeNoteText(value)}</strong>` : 'Not answered';
+        return `<li>${q.label} — ${shown}</li>`;
+      }).join('');
+      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}${textItems}</ul>${editorContent}`;
     }
 
     const { error } = await supabase.from('applicant_notes').insert({
@@ -214,6 +255,33 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
                 </div>
               );
             })}
+
+            <div className="space-y-2.5 pt-2.5 border-t">
+              {SIV_TEXT_QUESTIONS.map((q) => {
+                const id = `siv_${q.field}`;
+                return (
+                  <div key={q.field} className="space-y-1">
+                    <Label htmlFor={id} className="text-sm font-medium leading-snug">
+                      {q.label}
+                    </Label>
+                    {q.helper && (
+                      <p className="text-xs text-muted-foreground">{q.helper}</p>
+                    )}
+                    <Input
+                      id={id}
+                      value={sivText[q.field] ?? ''}
+                      onChange={(e) =>
+                        setSivText(
+                          (prev) => ({ ...prev, [q.field]: e.target.value }) as SivTextAnswers,
+                        )
+                      }
+                      placeholder={q.placeholder}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
