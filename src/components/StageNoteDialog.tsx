@@ -63,6 +63,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     if (!pending) return;
     setContent('');
     setSaving(false);
+    setSivAnswers({});
     setAddToCalendar(false);
     setCalDate(todayET());
     setCalStart('10:00');
