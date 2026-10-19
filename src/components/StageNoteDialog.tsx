@@ -253,7 +253,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Pr
 
         <StageNoteTemplates key={`${pending.applicantId}:${pending.newStatus}`} stage={pending.newStatus} content={content} questions={questions}
           onAddQuestion={() => setQuestions(prev => [...prev, { question: '', answer: '' }])}
-          onLoad={(text, prompts) => { setContent(text); setQuestions(loadTemplateQuestions(prompts)); setSivAnswers({}); setSivText({}); }}
+          onLoad={(text, prompts) => { setContent(text); setQuestions(loadTemplateQuestions(prompts)); }}
         />
 
         {pending.newStatus === 'SIV' && (
