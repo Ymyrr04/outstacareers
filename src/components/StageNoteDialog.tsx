@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { NotesEditor } from '@/components/NotesEditor';
 import { StageNoteTemplates } from '@/components/StageNoteTemplates';
 import { loadTemplateQuestions, questionAnswersHtml, type TemplateQuestion } from '@/lib/stageNoteTemplates';
+import { type ReversibleStageMove } from '@/lib/stageMoveCancellation';
 import { supabase } from '@/integrations/supabase/client';
 import { getErrorMessageSync } from '@/lib/errors';
 import { useSlackNotifications } from '@/hooks/useSlackNotifications';
@@ -27,10 +28,8 @@ function escapeNoteText(value: string) {
     .replace(/\n/g, '<br />');
 }
 
-export interface PendingStageNote {
-  applicantId: string;
+export interface PendingStageNote extends ReversibleStageMove {
   candidateName: string;
-  newStatus: string;
 }
 
 const SIV_QUESTIONS = [
@@ -74,11 +73,13 @@ interface Props {
   pending: PendingStageNote | null;
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
+  onCancel: () => Promise<void>;
 }
 
-export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
+export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Props) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [sivAnswers, setSivAnswers] = useState<SivAnswers>({});
   const [sivText, setSivText] = useState<SivTextAnswers>({});
   const [questions, setQuestions] = useState<TemplateQuestion[]>([]);
@@ -99,6 +100,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     if (!pending) return;
     setContent('');
     setSaving(false);
+    setCancelling(false);
     setSivAnswers({});
     setSivText({});
     setQuestions([]);
@@ -163,7 +165,21 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     return true;
   };
 
+  const handleCancel = async () => {
+    if (saving || cancelling) return;
+    setCancelling(true);
+    try {
+      await onCancel();
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(getErrorMessageSync(error, 'Failed to return candidate to the original stage'));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const handleSave = async () => {
+    if (saving || cancelling) return;
     const isSiv = pending.newStatus === 'SIV';
     const editorContent = content && content !== '<p></p>' ? content : '';
     const hasAnswer =
@@ -224,7 +240,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
 
 
   return (
-    <Dialog open={!!pending} onOpenChange={(o) => { if (!o && !saving) onOpenChange(false); }}>
+    <Dialog open={!!pending} onOpenChange={(o) => { if (!o && !saving && !cancelling) void handleCancel(); }}>
       <DialogContent className="max-w-lg max-h-[88vh] overflow-y-auto [&>button.absolute]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Add a note</DialogTitle>
@@ -387,7 +403,11 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button onClick={handleSave} disabled={saving}>
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={saving || cancelling}>
+            {cancelling && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving || cancelling}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save note
           </Button>

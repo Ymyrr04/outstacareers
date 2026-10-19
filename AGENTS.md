@@ -21,3 +21,4 @@
 - Save Markbot user messages (and new conversations) only together with the generated answer, so failed requests leave no unanswered questions in history.
 - Gate Markbot tool result fields on the admin's own tab permissions and list hidden fields in the result, so data the admin may not see reads as "cannot check" instead of "none".
 - Keep stage-note templates in a shared admin-only store, scoped by stage with reusable question prompts separate from candidate answers; loading resets answers while note and calendar persistence remain unchanged.
+- Carry the original status through stage-email and stage-note dialogs and restore it with a conditional status update before updating pipeline caches, so cancellation cannot overwrite a subsequent admin move.

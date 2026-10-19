@@ -36,6 +36,8 @@ export function WysiwygEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
+        link: false,
+        underline: false,
         bulletList: {
           keepMarks: true,
           keepAttributes: false,
