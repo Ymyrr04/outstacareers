@@ -107,7 +107,7 @@ export function StageNoteTemplates({ stage, content, questions, onLoad, onAddQue
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{confirmation === 'delete' ? 'Delete template?' : 'Load template?'}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmation === 'delete' ? `“${chosen?.name}” will be removed for all admins. Saved candidate notes stay unchanged.` : `“${chosen?.name}” will replace the current draft and clear screening answers for this candidate.`}</AlertDialogDescription>
+            <AlertDialogDescription>{confirmation === 'delete' ? `“${chosen?.name}” will be removed for all admins. Saved candidate notes stay unchanged.` : stage === 'SIV' ? `“${chosen?.name}” will replace the current draft for this candidate. Hire Readiness Recheck answers stay unchanged.` : `“${chosen?.name}” will replace the current draft for this candidate.`}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel><Button disabled={busy} variant={confirmation === 'delete' ? 'destructive' : 'default'} onClick={confirm}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : confirmation === 'delete' ? 'Delete template' : 'Load template'}</Button></AlertDialogFooter>
         </AlertDialogContent>
