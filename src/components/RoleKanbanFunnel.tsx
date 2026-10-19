@@ -601,11 +601,17 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       stage_entered_at: a.submitted_at,
     }));
 
-    // Fetch all stage groups together so failures cannot leave unhandled background requests.
+    // Keep priority-stage rendering while handling failures from every parallel phase.
     let priorityData: any[], backgroundData: any[], unfilteredData: any[];
     try {
       [priorityData, backgroundData, unfilteredData] = await Promise.all([
-        fetchByStatuses(PRIORITY_STATUSES), fetchByStatuses(BACKGROUND_STATUSES),
+        fetchByStatuses(PRIORITY_STATUSES).then(data => {
+          if (fetchVersion === candidateFetchVersionRef.current && !cached) {
+            setCandidates(mapToCandidate(data));
+            setLoading(false);
+          }
+          return data;
+        }), fetchByStatuses(BACKGROUND_STATUSES),
         fetchUnfilteredByStatuses(UNFILTERED_STATUSES),
       ]);
     } catch (error) {
@@ -1237,7 +1243,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md overflow-hidden"
               onMouseDown={(e) => e.preventDefault()}
             >
-              <ScrollArea className="max-h-[300px] overflow-y-auto">
+              <div className="max-h-[300px] overflow-y-auto">
                 <div className="p-1">
                   <button
                     className={cn(
@@ -1284,7 +1290,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                     <p className="px-3 py-2 text-sm text-muted-foreground">No roles found.</p>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </div>
           )}
         </div>
