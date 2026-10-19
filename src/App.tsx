@@ -83,6 +83,7 @@ const App = () => (
                 <Route path="/sign/:token" element={guard(<SignContract />)} />
                 <Route path="/countersign/:token" element={guard(<CountersignContract />)} />
                 <Route path="/availability-response" element={guard(<AvailabilityResponse />)} />
+                <Route path="/stage-note-check" element={guard(<StageNoteCheck />)} />
 
                 {/* Gmail App User Connector OAuth return (popup) */}
                 <Route path="/oauth/google_mail/return" element={<GmailOAuthReturn />} />
