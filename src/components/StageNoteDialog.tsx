@@ -197,14 +197,9 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
         const shown = value ? `<strong>${escapeNoteText(value)}</strong>` : 'Not answered';
         return `<li>${q.label} — ${shown}</li>`;
       }).join('');
-      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}${textItems}</ul>${editorContent}`;
-    }
-    if (questions.length) {
-      const customHtml = questionAnswersHtml(questions);
-      noteContent = isSiv
-        ? noteContent.replace(`${editorContent ? editorContent : '$NEVER_MATCH$'}`, `${customHtml}${editorContent}`)
-        : `${customHtml}${editorContent}`;
-      if (isSiv && !editorContent) noteContent += customHtml;
+      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}${textItems}</ul>${questionAnswersHtml(questions)}${editorContent}`;
+    } else if (questions.length) {
+      noteContent = `${questionAnswersHtml(questions)}${editorContent}`;
     }
 
     const { error } = await supabase.from('applicant_notes').insert({
