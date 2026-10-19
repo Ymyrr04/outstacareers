@@ -27,6 +27,7 @@ import { LinkCandidateCommentDialog } from '@/components/LinkCandidateCommentDia
 import { LinkedClientsBadge } from '@/components/LinkedClientsBadge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { candidateMatchesPipelineJobs, filterPipelineJobs, isInactivePipelineCandidate, pipelineJobNeedsAdmin, resolvePipelineRole, type PipelineJob } from '@/lib/rolePipelineJobs';
 import { priorityGate } from '@/lib/priorityGate';
 import { toast } from 'sonner';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
@@ -139,8 +140,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const { getDisplayName: getStageDisplayName, getColor: getStageColorOverride, orderStages } = useStageSettings();
   const orderedFunnelStages = useMemo(() => orderStages(FUNNEL_STAGES), [orderStages]);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeRoles, setActiveRoles] = useState<string[]>([]);
-  const [allRoles, setAllRoles] = useState<string[]>([]);
+  const [jobs, setJobs] = useState<PipelineJob[]>([]);
+  const [jobsLoaded, setJobsLoaded] = useState(false);
+  const candidateFetchVersionRef = useRef(0);
   const [jobFilter, setJobFilter] = useState<'active' | 'all' | 'inactive'>(() => {
     const p = searchParams.get('jobs');
     if (p === 'all') return 'all';
@@ -337,8 +339,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     return searchParams.get('admin') || 'all';
   });
   const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
-  const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
-  const [roleClientMap, setRoleClientMap] = useState<Record<string, string>>({});
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
   const [tagFilterSearch, setTagFilterSearch] = useState('');
@@ -352,12 +352,13 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
   // Persisted to sessionStorage so refreshes within the same tab session
   // also hit the cache instead of waiting on the 3-phase fetch.
-  const SS_CACHE_KEY = 'rkf:candidate-cache:v1';
+  const SS_CACHE_KEY = 'rkf:candidate-cache:jobs:v2';
   const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
   const candidateCacheRef = useRef<Map<string, { data: Candidate[]; ts: number }>>(
     (() => {
       if (typeof window === 'undefined') return new Map();
       try {
+        sessionStorage.removeItem('rkf:candidate-cache:v1');
         const raw = sessionStorage.getItem(SS_CACHE_KEY);
         if (!raw) return new Map();
         const parsed = JSON.parse(raw) as Record<string, { data: Candidate[]; ts: number }>;
@@ -438,43 +439,33 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     persistCache();
   }, [persistCache]);
 
-  // Fetch active job titles and admin assignments independently
+  // Preserve one row per job, including duplicate titles and clients.
   useEffect(() => {
     const fetchJobs = async () => {
-      const [activeResult, allResult] = await Promise.all([
-        supabase.from('jobs').select('title, assigned_admin_id, client_id').eq('is_active', true).order('title'),
-        supabase.from('jobs').select('title, assigned_admin_id, client_id').order('title'),
-      ]);
-
-      // Map role title -> client company name (internal visibility only)
-      const { data: clientRows } = await supabase.from('clients').select('id, company_name');
-      const clientNameById = new Map((clientRows || []).map((c: any) => [c.id, c.company_name]));
-      const roleClients: Record<string, string> = {};
-      for (const j of [...(allResult.data || []), ...(activeResult.data || [])]) {
-        const name = (j as any).client_id ? clientNameById.get((j as any).client_id) : null;
-        if (j.title && name) roleClients[j.title] = name;
-      }
-      setRoleClientMap(roleClients);
-      const filterTitle = (data: any[]) => (data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim()));
-      setActiveRoles(filterTitle(activeResult.data));
-      setAllRoles(filterTitle(allResult.data));
-
-      // Build admin list and admin-to-job-titles map
-      const adminMap = new Map<string, string[]>();
-      for (const j of [...(activeResult.data || []), ...(allResult.data || [])]) {
-        if (j.assigned_admin_id && j.title) {
-          if (!adminMap.has(j.assigned_admin_id)) adminMap.set(j.assigned_admin_id, []);
-          const titles = adminMap.get(j.assigned_admin_id)!;
-          if (!titles.includes(j.title)) titles.push(j.title);
+      const rows: PipelineJob[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from('jobs')
+          .select('id, title, assigned_admin_id, is_active, clients(company_name)')
+          .order('title').order('id').range(from, from + 999);
+        if (error) {
+          toast.error(getErrorMessageSync(error, 'Failed to load jobs'));
+          return;
         }
+        for (const job of data || []) {
+          if (!job.title || /^\$?\d+(\.\d+)?$/.test(job.title.trim())) continue;
+          rows.push({
+            id: job.id, title: job.title, assigned_admin_id: job.assigned_admin_id,
+            is_active: job.is_active, client_name: job.clients?.company_name ?? null,
+          });
+        }
+        if (!data || data.length < 1000) break;
       }
-      const admins = Array.from(adminMap.keys()).map(id => ({
-        id,
-        name: getAdminDisplayName(id, id.slice(0, 8)),
-      }));
-      admins.sort((a, b) => a.name.localeCompare(b.name));
+      setJobs(rows);
+      setJobsLoaded(true);
+      const admins = Array.from(new Set(rows.flatMap(job => job.assigned_admin_id ? [job.assigned_admin_id] : [])))
+        .map(id => ({ id, name: getAdminDisplayName(id, id.slice(0, 8)) }))
+        .sort((a, b) => a.name.localeCompare(b.name));
       setAdminList(admins);
-      setAdminJobTitlesMap(Object.fromEntries(adminMap));
     };
     fetchJobs();
     const onJobUpdated = () => {
@@ -490,59 +481,42 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
 
 
-  const filteredRoles = useMemo(() => {
-    let base: string[];
-    if (jobFilter === 'active') {
-      base = activeRoles;
-    } else if (jobFilter === 'inactive') {
-      const activeSet = new Set(activeRoles);
-      base = allRoles.filter(r => !activeSet.has(r));
-    } else {
-      base = allRoles;
-    }
-    if (selectedAdmin && selectedAdmin !== 'all') {
-      const adminTitles = new Set(adminJobTitlesMap[selectedAdmin] || []);
-      return base.filter(r => adminTitles.has(r));
-    }
-    return base;
-  }, [activeRoles, allRoles, jobFilter, selectedAdmin, adminJobTitlesMap]);
+  const filteredRoles = useMemo(() => filterPipelineJobs(jobs, jobFilter, selectedAdmin), [jobs, jobFilter, selectedAdmin]);
+  const selectedJob = jobs.find(job => job.id === selectedRole);
+  const jobAdminName = (job: PipelineJob) => job.assigned_admin_id
+    ? getAdminDisplayName(job.assigned_admin_id, job.assigned_admin_id.slice(0, 8)) : 'Unassigned';
+  const jobLabel = (job: PipelineJob) => [job.title, job.client_name,
+    pipelineJobNeedsAdmin(job, jobs) ? jobAdminName(job) : null].filter(Boolean).join(' — ');
+  const dropdownJobs = filteredRoles.filter(job =>
+    jobLabel(job).toLowerCase().includes(roleSearch.toLowerCase())
+  );
 
-  const inactiveRolesSet = useMemo(() => {
-    const activeSet = new Set(activeRoles);
-    return new Set(allRoles.filter(r => !activeSet.has(r)));
-  }, [activeRoles, allRoles]);
-
-  // If a specific role is selected but no longer in the list, reset to all.
-  // Wait until roles have actually loaded to avoid resetting on initial mount/refresh.
+  // Upgrade title-valued bookmarks, then enforce the selected job's filter scope.
   useEffect(() => {
-    const rolesLoaded = activeRoles.length > 0 || allRoles.length > 0;
-    if (!rolesLoaded) return;
-    if (selectedRole && selectedRole !== ALL_ROLES_KEY && !filteredRoles.includes(selectedRole)) {
-      setSelectedRole(ALL_ROLES_KEY);
-    }
-  }, [filteredRoles, activeRoles, allRoles]);
+    if (!jobsLoaded || selectedRole === ALL_ROLES_KEY) return;
+    const resolved = resolvePipelineRole(selectedRole, jobs);
+    setSelectedRole(filteredRoles.some(job => job.id === resolved) ? resolved : ALL_ROLES_KEY);
+  }, [jobsLoaded, jobs, filteredRoles, selectedRole]);
 
-  // Notify parent when selected role changes
+  // The historical funnel still consumes titles; its public callbacks stay unchanged.
   useEffect(() => {
-    if (selectedRole && selectedRole !== ALL_ROLES_KEY) _onRoleSelect?.(selectedRole);
-  }, [selectedRole, _onRoleSelect]);
+    if (selectedJob) _onRoleSelect?.(selectedJob.title);
+  }, [selectedJob, _onRoleSelect]);
 
-  // Notify parent of full filter context (role + jobFilter + admin), including "All Roles".
-  // adminScopedRoles is the list of roles assigned to the selected admin (or null when "all").
   useEffect(() => {
-    const adminScopedRoles = selectedAdmin && selectedAdmin !== 'all'
-      ? (adminJobTitlesMap[selectedAdmin] || [])
+    if (!jobsLoaded || (selectedRole !== ALL_ROLES_KEY && !selectedJob)) return;
+    const adminScopedRoles = selectedAdmin !== 'all'
+      ? jobs.filter(job => job.assigned_admin_id === selectedAdmin).map(job => job.title)
       : null;
-    onFiltersChange?.({ role: selectedRole, jobFilter, selectedAdmin, adminScopedRoles });
-  }, [selectedRole, jobFilter, selectedAdmin, adminJobTitlesMap, onFiltersChange]);
+    onFiltersChange?.({ role: selectedJob?.title ?? ALL_ROLES_KEY, jobFilter, selectedAdmin, adminScopedRoles });
+  }, [selectedRole, selectedJob, jobsLoaded, jobs, jobFilter, selectedAdmin, onFiltersChange]);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
 
-    // Build a cache key from the inputs that affect the result set.
-    const cacheKey = `${role}|${jobFilter}|${selectedAdmin}|${
-      role === ALL_ROLES_KEY ? filteredRoles.slice().sort().join(',') : ''
-    }`;
+    const fetchVersion = ++candidateFetchVersionRef.current;
+    // Include the job identities and assignment/status facts used by legacy matching.
+    const cacheKey = `${role}|${jobFilter}|${selectedAdmin}|${JSON.stringify(jobs)}`;
     const cached = candidateCacheRef.current.get(cacheKey);
     const now = Date.now();
     const isFresh = cached && (now - cached.ts) < CACHE_TTL_MS;
@@ -569,78 +543,42 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     const BACKGROUND_STATUSES = ['Reject', 'Archive', 'Archived'];
     const UNFILTERED_STATUSES = ['Bench', 'Talent Pool', 'Cold Talent Pool'];
 
-    const fetchUnfilteredByStatuses = async (statuses: string[]): Promise<any[]> => {
-      // Determine which roles to include based on the selected role and jobFilter
-      // (active/all/inactive). This mirrors fetchByStatuses but ignores the admin
-      // filter so Bench/Talent Pool still span all admins.
-      let rolesToFetch: string[] | null = null;
-      if (role !== ALL_ROLES_KEY) {
-        rolesToFetch = [role];
-      } else if (jobFilter === 'active') {
-        rolesToFetch = activeRoles;
-      } else if (jobFilter === 'inactive') {
-        const activeSet = new Set(activeRoles);
-        rolesToFetch = allRoles.filter(r => !activeSet.has(r));
-      }
-      // jobFilter === 'all' → rolesToFetch stays null (no role restriction)
-
-      if (rolesToFetch && rolesToFetch.length === 0) return [];
-
-      let collected: any[] = [];
-      let from = 0;
-      while (true) {
-        let q = supabase
-          .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles, is_available, availability_checked_at')
-          .in('status', statuses);
-        if (rolesToFetch) {
-          q = q.in('job_title', rolesToFetch);
+    const fetchForJobs = async (statuses: string[], scopedJobs: PipelineJob[]): Promise<any[]> => {
+      if (scopedJobs.length === 0) return [];
+      const jobIds = scopedJobs.map(job => job.id);
+      const wantedIds = new Set(jobIds);
+      const legacyTitles = [...new Set(jobs.filter(job =>
+        candidateMatchesPipelineJobs({ job_id: null, job_title: job.title }, jobs, wantedIds)
+      ).map(job => job.title))];
+      const columns = 'id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles, is_available, availability_checked_at';
+      // Separate linked and legacy queries: title fallback must NEVER match linked applicants.
+      const fetchPages = async (values: string[], legacy: boolean) => {
+        const rows: any[] = [];
+        for (let i = 0; i < values.length; i += 100) {
+          const chunk = values.slice(i, i + 100);
+          for (let from = 0; ; from += batchSize) {
+            let query = supabase.from('applicants_prescreen').select(columns).in('status', statuses);
+            if (legacy) query = query.is('job_id', null).in('job_title', chunk);
+            else query = chunk.length === 1 ? query.eq('job_id', chunk[0]) : query.in('job_id', chunk);
+            const { data, error } = await query
+              .order('total_score', { ascending: false, nullsFirst: false })
+              .order('id', { ascending: true }).range(from, from + batchSize - 1);
+            if (error) throw error;
+            rows.push(...(data || []));
+            if (!data || data.length < batchSize) break;
+          }
         }
-        const { data } = await q
-          .order('total_score', { ascending: false, nullsFirst: false })
-          .order('id', { ascending: true })
-          .range(from, from + batchSize - 1);
-        if (!data || data.length === 0) break;
-        collected = collected.concat(data);
-        if (data.length < batchSize) break;
-        from += batchSize;
-      }
-      return collected;
+        return rows;
+      };
+      const [linked, legacy] = await Promise.all([fetchPages(jobIds, false), fetchPages(legacyTitles, true)]);
+      return [...linked, ...legacy].filter(candidate => candidateMatchesPipelineJobs(candidate, jobs, wantedIds));
     };
-
-    const fetchByStatuses = async (statuses: string[]): Promise<any[]> => {
-      if (role === ALL_ROLES_KEY) {
-        const rolesToFetch = filteredRoles.length > 0
-          ? filteredRoles
-          : (jobFilter === 'active' ? activeRoles : allRoles);
-        if (rolesToFetch.length === 0) return [];
-        let collected: any[] = [];
-        let from = 0;
-        while (true) {
-          const { data } = await supabase
-            .from('applicants_prescreen')
-            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles, is_available, availability_checked_at')
-            .in('job_title', rolesToFetch)
-            .in('status', statuses)
-            .order('total_score', { ascending: false, nullsFirst: false })
-            .order('id', { ascending: true })
-            .range(from, from + batchSize - 1);
-          if (!data || data.length === 0) break;
-          collected = collected.concat(data);
-          if (data.length < batchSize) break;
-          from += batchSize;
-        }
-        return collected;
-      } else {
-        const { data } = await supabase
-          .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles, is_available, availability_checked_at')
-          .eq('job_title', role)
-          .in('status', statuses)
-          .order('total_score', { ascending: false, nullsFirst: false });
-        return data || [];
-      }
-    };
+    const selectedJobs = role === ALL_ROLES_KEY ? filteredRoles : filteredRoles.filter(job => job.id === role);
+    const unfilteredJobs = role === ALL_ROLES_KEY
+      ? filterPipelineJobs(jobs, jobFilter)
+      : filterPipelineJobs(jobs, jobFilter).filter(job => job.id === role);
+    const fetchByStatuses = (statuses: string[]) => fetchForJobs(statuses, selectedJobs);
+    const fetchUnfilteredByStatuses = (statuses: string[]) => fetchForJobs(statuses, unfilteredJobs);
 
     // Guard against the same applicant appearing twice (range pagination can
     // repeat rows when scores tie, and phases could overlap).
@@ -663,27 +601,23 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       stage_entered_at: a.submitted_at,
     }));
 
-    // Fire ALL phases in parallel. The previous two-phase approach starved the
-    // background fetch behind per-card duplicate-check N+1 queries from
-    // useApplicationHistory, leaving Bench / Talent Pipeline / Reject columns
-    // visibly empty for many seconds.
-    const priorityPromise = fetchByStatuses(PRIORITY_STATUSES);
-    const backgroundPromise = fetchByStatuses(BACKGROUND_STATUSES);
-    const unfilteredPromise = fetchUnfilteredByStatuses(UNFILTERED_STATUSES);
-
-    // Paint priority data as soon as it lands so the active funnel stays snappy.
-    const priorityData = await priorityPromise;
-    if (!cached) {
-      setCandidates(mapToCandidate(priorityData));
+    // Fetch all stage groups together so failures cannot leave unhandled background requests.
+    let priorityData: any[], backgroundData: any[], unfilteredData: any[];
+    try {
+      [priorityData, backgroundData, unfilteredData] = await Promise.all([
+        fetchByStatuses(PRIORITY_STATUSES), fetchByStatuses(BACKGROUND_STATUSES),
+        fetchUnfilteredByStatuses(UNFILTERED_STATUSES),
+      ]);
+    } catch (error) {
+      if (fetchVersion !== candidateFetchVersionRef.current) return;
       setLoading(false);
+      toast.error(getErrorMessageSync(error, 'Failed to load candidates'));
+      return;
     }
-
-    const [backgroundData, unfilteredData] = await Promise.all([
-      backgroundPromise,
-      unfilteredPromise,
-    ]);
+    if (fetchVersion !== candidateFetchVersionRef.current) return;
     const allData = [...priorityData, ...backgroundData, ...unfilteredData];
     if (!cached) setCandidates(mapToCandidate(allData));
+    setLoading(false);
 
     const applicantIds = allData.map(a => a.id);
     if (applicantIds.length === 0) {
@@ -743,26 +677,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     }));
 
+    if (fetchVersion !== candidateFetchVersionRef.current) return;
     // Cache the fully-enriched result and swap it in.
     candidateCacheRef.current.set(cacheKey, { data: enriched, ts: Date.now() });
     persistCache();
     setCandidates(enriched);
-  }, [activeRoles, allRoles, jobFilter, filteredRoles, selectedAdmin, persistCache]);
+  }, [jobs, jobFilter, filteredRoles, selectedAdmin, persistCache]);
 
-  // Signature of the role set currently in scope (changes when a job's assigned
-  // admin changes, so the selected admin's pipeline refetches instead of
-  // showing the roles/candidates from the previous assignment).
-  const filteredRolesKey = useMemo(() => filteredRoles.slice().sort().join(','), [filteredRoles]);
+  const filteredRolesKey = useMemo(() => filteredRoles.map(job => job.id).sort().join(','), [filteredRoles]);
 
   useEffect(() => {
-    if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
-    if (selectedRole) fetchCandidates(selectedRole);
-    // Intentionally exclude fetchCandidates from deps: it changes whenever
-    // filteredRoles/jobFilter recompute, which would cause redundant refetches
-    // while the user sits on the page (e.g., admin map loading in stages).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length, filteredRolesKey]);
-
+    if (!jobsLoaded || (selectedRole !== ALL_ROLES_KEY && !filteredRoles.some(job => job.id === selectedRole))) return;
+    fetchCandidates(selectedRole);
+    return () => { candidateFetchVersionRef.current += 1; };
+  }, [jobsLoaded, selectedRole, filteredRoles, fetchCandidates]);
 
   // Fetch which loaded candidates have profiles (primary or additional)
   useEffect(() => {
@@ -1085,8 +1013,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
     // Filter by admin
     if (selectedAdmin !== 'all') {
-      const adminJobTitles = adminJobTitlesMap[selectedAdmin] || [];
-      result = result.filter(c => adminJobTitles.includes(c.job_title));
+      const adminJobs = new Set(filterPipelineJobs(jobs, jobFilter, selectedAdmin).map(job => job.id));
+      result = result.filter(c => ['Bench', 'Talent Pool', 'Cold Talent Pool'].includes(c.status) ||
+        candidateMatchesPipelineJobs(c, jobs, adminJobs));
     }
 
     if (candidateSearch.trim()) {
@@ -1128,7 +1057,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       }
     }
     return result;
-  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags, selectedSuitableRoles, appliedProfileSearch, profileTextMap]);
+  }, [candidates, candidateSearch, selectedAdmin, jobs, jobFilter, selectedTags, selectedSuitableRoles, appliedProfileSearch, profileTextMap]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
@@ -1278,7 +1207,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search & select role..."
-              value={dropdownOpen ? roleSearch : (selectedRole === ALL_ROLES_KEY ? 'All Roles' : selectedRole)}
+              value={dropdownOpen ? roleSearch : (selectedRole === ALL_ROLES_KEY ? 'All Roles' : (selectedJob ? jobLabel(selectedJob) : ''))}
               onChange={(e) => {
                 setRoleSearch(e.target.value);
                 setDropdownOpen(true);
@@ -1324,40 +1253,34 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                   >
                     All Roles
                   </button>
-                  {filteredRoles
-                    .filter((r) => {
-                      const q = roleSearch.toLowerCase();
-                      return r.toLowerCase().includes(q) || (roleClientMap[r] || '').toLowerCase().includes(q);
-                    })
-                    .sort((a, b) => a.localeCompare(b))
-                    .map((role) => (
-                      <button
-                        key={role}
-                        className={cn(
-                          'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors',
-                          selectedRole === role && 'bg-accent/50 font-medium'
-                        )}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          setSelectedRole(role);
-                          setDropdownOpen(false);
-                          setRoleSearch('');
-                        }}
-                      >
-                        <span className="flex items-center justify-between gap-2">
-                          <span className="truncate">{role}</span>
-                          {roleClientMap[role] && (
-                            <span className="shrink-0 text-xs text-muted-foreground truncate max-w-[45%]">
-                              {roleClientMap[role]}
-                            </span>
+                  {dropdownJobs.map((job) => (
+                    <Button
+                      key={job.id}
+                      variant="ghost"
+                      title={jobLabel(job)}
+                      className={cn(
+                        'w-full h-auto justify-start text-left px-3 py-1.5 text-sm rounded-sm font-normal',
+                        selectedRole === job.id && 'bg-accent/50 font-medium'
+                      )}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setSelectedRole(job.id);
+                        setDropdownOpen(false);
+                        setRoleSearch('');
+                      }}
+                    >
+                      <span className="flex w-full min-w-0 items-center justify-between gap-2">
+                        <span className="min-w-0 truncate">{job.title}</span>
+                        <span className="min-w-0 max-w-[55%] text-right text-xs text-muted-foreground whitespace-normal break-words">
+                          {job.client_name}
+                          {pipelineJobNeedsAdmin(job, jobs) && (
+                            <span className="block">{jobAdminName(job)}</span>
                           )}
                         </span>
-                      </button>
-                    ))}
-                  {filteredRoles.filter((r) => {
-                    const q = roleSearch.toLowerCase();
-                    return r.toLowerCase().includes(q) || (roleClientMap[r] || '').toLowerCase().includes(q);
-                  }).length === 0 && (
+                      </span>
+                    </Button>
+                  ))}
+                  {dropdownJobs.length === 0 && (
                     <p className="px-3 py-2 text-sm text-muted-foreground">No roles found.</p>
                   )}
                 </div>
@@ -1860,7 +1783,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                               setDropTargetStage(null);
                             }}
                             showRoleLabel={selectedRole === ALL_ROLES_KEY}
-                            isInactiveRole={jobFilter === 'all' && inactiveRolesSet.has(candidate.job_title)}
+                            isInactiveRole={jobFilter === 'all' && isInactivePipelineCandidate(candidate, jobs)}
                             isSelected={selectedIds.has(candidate.id)}
                             onSelectToggle={() => toggleCardSelection(candidate)}
                             hasAdditionalProfile={additionalProfileIds.has(candidate.id)}
