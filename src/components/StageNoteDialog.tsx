@@ -186,10 +186,41 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
           </DialogDescription>
         </DialogHeader>
 
+        {pending.newStatus === 'SIV' && (
+          <div className="rounded-md border p-3 space-y-2.5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">SIV Screening</p>
+            {SIV_QUESTIONS.map((q) => {
+              const answer = sivAnswers[q];
+              return (
+                <div key={q} className="flex items-center justify-between gap-3">
+                  <span className="text-sm leading-snug">{q}</span>
+                  <div className="flex gap-1.5 shrink-0">
+                    {([true, false] as const).map((val) => {
+                      const selected = answer === val;
+                      return (
+                        <Button
+                          key={String(val)}
+                          type="button"
+                          size="sm"
+                          variant={selected ? 'default' : 'outline'}
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setSivAnswers(prev => ({ ...prev, [q]: selected ? undefined : val }))}
+                        >
+                          {val ? 'Yes' : 'No'}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <NotesEditor
           value={content}
           onChange={setContent}
-          placeholder="Write your note..."
+          placeholder={pending.newStatus === 'SIV' ? 'Additional notes (optional)' : 'Write your note...'}
           minHeight="140px"
           autoFocus
         />
