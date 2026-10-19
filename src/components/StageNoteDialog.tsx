@@ -18,6 +18,7 @@ import { Loader2, Save, CalendarPlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
 import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
+import { defaultsToCalendarOnMove } from '@/lib/stageNoteCalendar';
 
 function escapeNoteText(value: string) {
   return value
@@ -104,7 +105,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Pr
     setSivAnswers({});
     setSivText({});
     setQuestions([]);
-    setAddToCalendar(false);
+    setAddToCalendar(defaultsToCalendarOnMove(pending.previousStatus));
     setCalDate(todayET());
     setCalStart('10:00');
     setCalEnd('11:00');
