@@ -399,10 +399,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         contractorName={pdcRow.contractor_name}
         onApprove={(doc) => stageDoc(pdcRow.id, doc)}
         data={{
-          fullName:
-            extractNoteField(pdcRow.assignment_notes, 'Preferred Name') ||
-            extractNoteField(pdcRow.assignment_notes, 'Full Name') ||
-            (pdcRow.contractor_name === 'Unknown contractor' ? '' : pdcRow.contractor_name),
+          fullName: pdcRow.contractor_name === 'Unknown contractor' ? '' : pdcRow.contractor_name,
           hoursPerWeek: pdcRow.hours_per_week,
           hourlyRate: pdcRow.hourly_rate,
         }}
