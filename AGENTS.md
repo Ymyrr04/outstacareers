@@ -20,3 +20,4 @@
 - Markbot answers P&L questions through its pl_analytics tool, which aggregates the stored historical_pl_rows (internal OutSta rows excluded, hours preferring actual_hours) and is gated by the "pl" tab permission, so chat figures always match the P&L report.
 - Save Markbot user messages (and new conversations) only together with the generated answer, so failed requests leave no unanswered questions in history.
 - Gate Markbot tool result fields on the admin's own tab permissions and list hidden fields in the result, so data the admin may not see reads as "cannot check" instead of "none".
+- Keep stage-note templates in a shared admin-only store, scoped by stage with reusable question prompts separate from candidate answers; loading resets answers while note and calendar persistence remain unchanged.

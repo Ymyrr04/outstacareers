@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Add shared named stage-note templates with save, load, delete and fresh question answers; verify without moving real candidates.
 
 - [x] Show the client in the Role Pipeline "All Roles" candidate card role label, with a full-text tooltip.
 

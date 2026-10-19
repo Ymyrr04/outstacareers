@@ -4145,6 +4145,36 @@ export type Database = {
           },
         ]
       }
+      stage_note_templates: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          questions: string[]
+          stage: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name: string
+          questions?: string[]
+          stage: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          questions?: string[]
+          stage?: string
+        }
+        Relationships: []
+      }
       stage_settings: {
         Row: {
           color: string | null

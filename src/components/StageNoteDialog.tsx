@@ -8,10 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NotesEditor } from '@/components/NotesEditor';
+import { StageNoteTemplates } from '@/components/StageNoteTemplates';
+import { loadTemplateQuestions, questionAnswersHtml, type TemplateQuestion } from '@/lib/stageNoteTemplates';
 import { supabase } from '@/integrations/supabase/client';
 import { getErrorMessageSync } from '@/lib/errors';
 import { useSlackNotifications } from '@/hooks/useSlackNotifications';
-import { Loader2, Save, CalendarPlus } from 'lucide-react';
+import { Loader2, Save, CalendarPlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
 import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
@@ -79,6 +81,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [sivAnswers, setSivAnswers] = useState<SivAnswers>({});
   const [sivText, setSivText] = useState<SivTextAnswers>({});
+  const [questions, setQuestions] = useState<TemplateQuestion[]>([]);
   const { admins } = useCalendarAdmins();
   const { notifyCalendarActivity } = useSlackNotifications();
 
@@ -98,6 +101,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     setSaving(false);
     setSivAnswers({});
     setSivText({});
+    setQuestions([]);
     setAddToCalendar(false);
     setCalDate(todayET());
     setCalStart('10:00');
@@ -165,13 +169,14 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     const hasAnswer =
       SIV_QUESTIONS.some((q) => sivAnswers[q] !== undefined) ||
       SIV_TEXT_QUESTIONS.some((q) => (sivText[q.field] ?? '').trim() !== '');
+    const hasCustomAnswer = questions.some(q => q.question.trim() && q.answer.trim());
 
     if (isSiv) {
-      if (!hasAnswer && !editorContent) {
+      if (!hasAnswer && !hasCustomAnswer && !editorContent) {
         toast.error('Note cannot be empty');
         return;
       }
-    } else if (!editorContent) {
+    } else if (!editorContent && !hasCustomAnswer) {
       toast.error('Note cannot be empty');
       return;
     }
@@ -192,7 +197,9 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
         const shown = value ? `<strong>${escapeNoteText(value)}</strong>` : 'Not answered';
         return `<li>${q.label} — ${shown}</li>`;
       }).join('');
-      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}${textItems}</ul>${editorContent}`;
+      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}${textItems}</ul>${questionAnswersHtml(questions)}${editorContent}`;
+    } else if (questions.length) {
+      noteContent = `${questionAnswersHtml(questions)}${editorContent}`;
     }
 
     const { error } = await supabase.from('applicant_notes').insert({
@@ -226,6 +233,11 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
             A note is required — it will be saved to this candidate's notes.
           </DialogDescription>
         </DialogHeader>
+
+        <StageNoteTemplates key={`${pending.applicantId}:${pending.newStatus}`} stage={pending.newStatus} content={content} questions={questions}
+          onAddQuestion={() => setQuestions(prev => [...prev, { question: '', answer: '' }])}
+          onLoad={(text, prompts) => { setContent(text); setQuestions(loadTemplateQuestions(prompts)); setSivAnswers({}); setSivText({}); }}
+        />
 
         {pending.newStatus === 'SIV' && (
           <div className="rounded-md border p-3 space-y-2.5">
@@ -284,6 +296,18 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
             </div>
           </div>
         )}
+
+        {questions.length > 0 && <div className="space-y-3">
+          {questions.map((q, index) => <div key={index} className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Input aria-label={`Question ${index + 1}`} placeholder="Screening question" value={q.question} maxLength={1000}
+                onChange={e => setQuestions(prev => prev.map((item, i) => i === index ? { ...item, question: e.target.value } : item))} />
+              <Button type="button" size="icon" variant="ghost" title="Remove question" aria-label={`Remove question ${index + 1}`} onClick={() => setQuestions(prev => prev.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button>
+            </div>
+            <Textarea aria-label={`Answer ${index + 1}`} placeholder="Candidate’s answer" rows={2} value={q.answer}
+              onChange={e => setQuestions(prev => prev.map((item, i) => i === index ? { ...item, answer: e.target.value } : item))} />
+          </div>)}
+        </div>}
 
         <NotesEditor
           value={content}
