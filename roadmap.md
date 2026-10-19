@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Show the client in the Role Pipeline "All Roles" candidate card role label, with a full-text tooltip.
+
 - [x] Make Role Pipeline job-based, preserve legacy title links and unlinked candidates, and verify duplicate-job filters.
 
 - [x] Add contractor Announcement tab to reread the acknowledged payment update.

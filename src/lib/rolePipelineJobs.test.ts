@@ -1,6 +1,6 @@
 import { describe, it as test } from 'node:test';
 import { deepStrictEqual, strictEqual } from 'node:assert';
-import { candidatePipelineJobIds, filterPipelineJobs, isInactivePipelineCandidate, pipelineJobNeedsAdmin, resolvePipelineRole, type PipelineJob } from './rolePipelineJobs';
+import { candidatePipelineJobIds, candidateRoleLabel, filterPipelineJobs, isInactivePipelineCandidate, pipelineJobNeedsAdmin, resolvePipelineRole, type PipelineJob } from './rolePipelineJobs';
 
 const jobs: PipelineJob[] = [
   { id: 'job-a', title: 'CSR', client_name: 'Client A', assigned_admin_id: 'kristine', is_active: true },
@@ -44,5 +44,15 @@ describe('Role Pipeline job identity', () => {
   test('admin disambiguation applies only to identical title and client', () => {
     strictEqual(pipelineJobNeedsAdmin(jobs[0], jobs), false);
     strictEqual(pipelineJobNeedsAdmin(jobs[2], jobs), true);
+  });
+  test('card label shows the linked job title plus its client', () => {
+    strictEqual(candidateRoleLabel({ job_id: 'job-b', job_title: 'CSR' }, jobs), 'CSR · Client B');
+  });
+  test('card label falls back to the title when the job has no client', () => {
+    strictEqual(candidateRoleLabel({ job_id: 'job-c', job_title: 'Accountant' }, jobs.map(job => (job.id === 'job-c' ? { ...job, client_name: null } : job))), 'Accountant');
+  });
+  test('card label uses the stored title for unlinked or unknown jobs', () => {
+    strictEqual(candidateRoleLabel({ job_id: null, job_title: 'CSR' }, jobs), 'CSR');
+    strictEqual(candidateRoleLabel({ job_id: 'job-gone', job_title: 'CSR' }, jobs), 'CSR');
   });
 });

@@ -45,3 +45,11 @@ export function isInactivePipelineCandidate(candidate: { job_id: string | null; 
 export function pipelineJobNeedsAdmin(job: PipelineJob, jobs: PipelineJob[]) {
   return jobs.filter(other => other.title === job.title && other.client_name === job.client_name).length > 1;
 }
+
+// Card role label: the linked job's title plus its client, falling back to the
+// stored title when the job is unknown or has no client.
+export function candidateRoleLabel(candidate: { job_id: string | null; job_title: string }, jobs: PipelineJob[]) {
+  const job = candidate.job_id ? jobs.find(other => other.id === candidate.job_id) : undefined;
+  const title = job?.title || candidate.job_title;
+  return job?.client_name ? `${title} · ${job.client_name}` : title;
+}
