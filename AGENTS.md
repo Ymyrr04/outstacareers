@@ -1,4 +1,5 @@
 - Keep availability-check sender-name selection in one shared dialog and validate the actual sending account on the server, so every send entry point behaves consistently without allowing a forged From address.
+- Keep Role Pipeline job identity and legacy unlinked-candidate matching in shared pure helpers; preserve title-valued callbacks for the untouched historical RecruitmentFunnel so its existing title filters remain compatible.
 - Store optional historical spreadsheet financial columns as nullable historical P&L row fields, while keeping the weekly table unchanged, so imports retain their values without altering the existing report.
 - Store weekly P&L deposit labels separately from numeric deposit amounts on assignments, so notes such as EXEMPT display without corrupting financial values.
 - Retain internal-company historical rows for display, but filter them at every headcount and financial aggregation boundary so visibility does not change external reports.
