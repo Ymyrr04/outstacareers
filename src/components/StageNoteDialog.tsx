@@ -45,6 +45,7 @@ interface Props {
 export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [sivAnswers, setSivAnswers] = useState<SivAnswers>({});
   const { admins } = useCalendarAdmins();
   const { notifyCalendarActivity } = useSlackNotifications();
 
