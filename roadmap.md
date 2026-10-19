@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Make Role Pipeline job-based, preserve legacy title links and unlinked candidates, and verify duplicate-job filters.
+
 - [x] Add contractor Announcement tab to reread the acknowledged payment update.
 
 - [x] Add contractor-only payment notice with saved acknowledgement required before portal access and timesheet submission.
