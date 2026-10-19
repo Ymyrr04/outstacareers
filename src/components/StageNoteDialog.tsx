@@ -22,6 +22,20 @@ export interface PendingStageNote {
   newStatus: string;
 }
 
+const SIV_QUESTIONS = [
+  'Do you have a home office setup?',
+  'Do you have a noise-canceling headset?',
+  'Do you have a fully functioning laptop or PC?',
+  'Do you have a good quality internet connection?',
+  'Do you have a power generator or backup for power cuts?',
+  'Are you willing to work 40–50 hours per week?',
+  'Are you comfortable working US time zones?',
+  'Do you have experience in a similar role?',
+  'Are you still currently Employed or Rendering your notice?',
+] as const;
+
+type SivAnswers = Partial<Record<string, boolean>>;
+
 interface Props {
   pending: PendingStageNote | null;
   onOpenChange: (open: boolean) => void;
