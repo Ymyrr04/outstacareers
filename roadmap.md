@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Make Role Pipeline job-based, preserve legacy title links and unlinked candidates, and verify duplicate-job filters.
+- [x] Make Role Pipeline job-based, preserve legacy title links and unlinked candidates, and verify duplicate-job filters.
 
 - [x] Add contractor Announcement tab to reread the acknowledged payment update.
 
