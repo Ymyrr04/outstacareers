@@ -22,6 +22,20 @@ export interface PendingStageNote {
   newStatus: string;
 }
 
+const SIV_QUESTIONS = [
+  'Do you have a home office setup?',
+  'Do you have a noise-canceling headset?',
+  'Do you have a fully functioning laptop or PC?',
+  'Do you have a good quality internet connection?',
+  'Do you have a power generator or backup for power cuts?',
+  'Are you willing to work 40–50 hours per week?',
+  'Are you comfortable working US time zones?',
+  'Do you have experience in a similar role?',
+  'Are you still currently Employed or Rendering your notice?',
+] as const;
+
+type SivAnswers = Partial<Record<string, boolean>>;
+
 interface Props {
   pending: PendingStageNote | null;
   onOpenChange: (open: boolean) => void;
@@ -31,6 +45,7 @@ interface Props {
 export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [sivAnswers, setSivAnswers] = useState<SivAnswers>({});
   const { admins } = useCalendarAdmins();
   const { notifyCalendarActivity } = useSlackNotifications();
 
@@ -48,6 +63,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     if (!pending) return;
     setContent('');
     setSaving(false);
+    setSivAnswers({});
     setAddToCalendar(false);
     setCalDate(todayET());
     setCalStart('10:00');
@@ -110,15 +126,37 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   };
 
   const handleSave = async () => {
-    if (!content || content === '<p></p>') {
+    const isSiv = pending.newStatus === 'SIV';
+    const editorContent = content && content !== '<p></p>' ? content : '';
+    const hasAnswer = SIV_QUESTIONS.some((q) => sivAnswers[q] !== undefined);
+
+    if (isSiv) {
+      if (!hasAnswer && !editorContent) {
+        toast.error('Note cannot be empty');
+        return;
+      }
+    } else if (!editorContent) {
       toast.error('Note cannot be empty');
       return;
     }
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
+
+    let noteContent = editorContent;
+    if (isSiv) {
+      const items = SIV_QUESTIONS.map((q) => {
+        const answer = sivAnswers[q];
+        const shown = answer === undefined
+          ? 'Not answered'
+          : `<strong>${answer ? 'Yes' : 'No'}</strong>`;
+        return `<li>${q} — ${shown}</li>`;
+      }).join('');
+      noteContent = `<p><strong>SIV Screening</strong></p><ul>${items}</ul>${editorContent}`;
+    }
+
     const { error } = await supabase.from('applicant_notes').insert({
       applicant_id: pending.applicantId,
-      content,
+      content: noteContent,
       created_by: user?.id || null,
     });
     if (error) {
@@ -148,10 +186,41 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
           </DialogDescription>
         </DialogHeader>
 
+        {pending.newStatus === 'SIV' && (
+          <div className="rounded-md border p-3 space-y-2.5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">SIV Screening</p>
+            {SIV_QUESTIONS.map((q) => {
+              const answer = sivAnswers[q];
+              return (
+                <div key={q} className="flex items-center justify-between gap-3">
+                  <span className="text-sm leading-snug">{q}</span>
+                  <div className="flex gap-1.5 shrink-0">
+                    {([true, false] as const).map((val) => {
+                      const selected = answer === val;
+                      return (
+                        <Button
+                          key={String(val)}
+                          type="button"
+                          size="sm"
+                          variant={selected ? 'default' : 'outline'}
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setSivAnswers(prev => ({ ...prev, [q]: selected ? undefined : val }))}
+                        >
+                          {val ? 'Yes' : 'No'}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <NotesEditor
           value={content}
           onChange={setContent}
-          placeholder="Write your note..."
+          placeholder={pending.newStatus === 'SIV' ? 'Additional notes (optional)' : 'Write your note...'}
           minHeight="140px"
           autoFocus
         />
