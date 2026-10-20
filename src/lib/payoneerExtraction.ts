@@ -38,15 +38,23 @@ const csvCell = (value: string) => /[",\r\n]/.test(value)
   ? `"${value.replace(/"/g, '""')}"`
   : value;
 
+const invoiceAmountOf = (row: PayoneerSubmission) =>
+  row.contractor?.hourly_rate != null
+    ? Number(row.total_hours) * Number(row.contractor.hourly_rate)
+    : null;
+
 export function payoneerExtractionCSV(rows: PayoneerSubmission[]): string {
-  const headers = ['Name', 'Payoneer Email address', 'Invoice Amount', 'Bonus Amount', 'Invoice Week'];
-  return [headers.join(','), ...rows.map((row) => [
-    row.contractor?.applicant?.full_name || '',
-    row.contractor?.payoneer_email || '',
-    row.contractor?.hourly_rate != null
-      ? (Number(row.total_hours) * Number(row.contractor.hourly_rate)).toFixed(2)
-      : '',
-    Number(row.incentive_amount || 0).toFixed(2),
-    row.week_ending_date,
-  ].map(csvCell).join(','))].join('\r\n');
+  const headers = ['Name', 'Payoneer Email address', 'Invoice Amount', 'Bonus Amount', 'Total', 'Invoice Week'];
+  return [headers.join(','), ...rows.map((row) => {
+    const invoice = invoiceAmountOf(row);
+    const bonus = Number(row.incentive_amount || 0);
+    return [
+      row.contractor?.applicant?.full_name || '',
+      row.contractor?.payoneer_email || '',
+      invoice != null ? invoice.toFixed(2) : '',
+      bonus.toFixed(2),
+      invoice != null ? (invoice + bonus).toFixed(2) : '',
+      row.week_ending_date,
+    ].map(csvCell).join(',');
+  })].join('\r\n');
 }
