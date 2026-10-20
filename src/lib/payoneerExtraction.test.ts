@@ -1,6 +1,6 @@
 import { describe, it as test } from 'node:test';
 import { strictEqual, deepStrictEqual, ok } from 'node:assert';
-import { payoneerExtractionCSV, extractionDepositStatus, selectedExtractionRows } from './payoneerExtraction';
+import { payoneerExtractionCSV, extractionDepositStatus, extractionDepositRows, extractionExportRows } from './payoneerExtraction';
 
 describe('Payoneer extraction', () => {
   test('flags an unfinished deposit', () => {
@@ -14,10 +14,21 @@ describe('Payoneer extraction', () => {
     strictEqual(extractionDepositStatus({ isDeposit: true, depositHours: 20, weekIndex: 1, targetStatus: 'complete' }, 40, 40), 'complete');
     strictEqual(extractionDepositStatus({ isDeposit: true, depositHours: 40, weekIndex: 1, targetStatus: 'excess' }, 80, 60), 'excess');
   });
-  test('exports only individually selected submissions and permits selecting none', () => {
-    const rows = [{ id: 'a' }, { id: 'b' }];
-    deepStrictEqual(selectedExtractionRows(rows, new Set(['b'])), [{ id: 'b' }]);
-    deepStrictEqual(selectedExtractionRows(rows, new Set()), []);
+  const rows = [
+    { id: 'a', depositStatus: 'none' as const },
+    { id: 'b', depositStatus: 'ongoing' as const },
+    { id: 'c', depositStatus: 'none' as const },
+    { id: 'd', depositStatus: 'excess' as const },
+  ];
+  test('lists only submissions that have a deposit', () => {
+    deepStrictEqual(extractionDepositRows(rows), [rows[1], rows[3]]);
+  });
+  test('keeps every no-deposit submission and adds only the selected deposit ones', () => {
+    deepStrictEqual(extractionExportRows(rows, new Set(['d'])), [rows[0], rows[2], rows[3]]);
+    deepStrictEqual(extractionExportRows(rows, new Set(['b', 'd'])), rows);
+  });
+  test('deselecting every deposit submission still extracts the no-deposit ones', () => {
+    deepStrictEqual(extractionExportRows(rows, new Set()), [rows[0], rows[2]]);
   });
   test('exports only the five requested fields, with invoice and bonus separate', () => {
     const csv = payoneerExtractionCSV([{
