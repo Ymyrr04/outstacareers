@@ -1,5 +1,6 @@
 # Roadmap
 - [x] Add deposit-status review and individual selection before Payoneer extraction; verified live flags, empty-selection disabling, selected-only download and seven tests.
+- [x] Payoneer extraction now always includes submissions with no deposit and lists only deposit submissions for selection; verified live 111 always-included plus 3 deposit rows, deselect-one export of 113 rows, and nine tests.
 - [x] Add Payoneer extraction to weekly submissions with only name, Payoneer email, invoice amount, bonus amount and invoice week; verified signed-in CSV download and three tests.
 - [x] Tick "Add to calendar" by default when a candidate moves from Qualified to For Interview; verified in the browser without moving a real candidate.
 - [x] Add Cancel beside Save note to restore the original candidate stage without saving notes or calendar activities; verified cancellation and failed-restore retry with real-record writes blocked.
