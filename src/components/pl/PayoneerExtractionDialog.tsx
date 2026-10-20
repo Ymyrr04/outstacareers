@@ -60,8 +60,8 @@ export function PayoneerExtractionDialog({ rows, onClose, onExtract }: {
         {noDepositRows.length > 0 && (
           <details className="shrink-0 text-xs text-muted-foreground">
             <summary className="cursor-pointer select-none">Always included — no deposit this week ({noDepositRows.length})</summary>
-            <div className="mt-1 max-h-28 overflow-auto rounded-md border border-border p-2 leading-5">
-              {noDepositRows.map((row) => <span key={row.id} className="mr-3 whitespace-nowrap">{row.contractor?.applicant?.full_name || 'Unnamed contractor'}</span>)}
+            <div className="mt-1 max-h-28 overflow-auto rounded-md border border-border p-2 flex flex-wrap gap-x-3 gap-y-1 leading-5">
+              {noDepositRows.map((row) => <span key={row.id}>{row.contractor?.applicant?.full_name || 'Unnamed contractor'}</span>)}
             </div>
           </details>
         )}
