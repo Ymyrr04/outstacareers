@@ -1,8 +1,24 @@
 import { describe, it as test } from 'node:test';
 import { strictEqual, deepStrictEqual, ok } from 'node:assert';
-import { payoneerExtractionCSV } from './payoneerExtraction';
+import { payoneerExtractionCSV, extractionDepositStatus, selectedExtractionRows } from './payoneerExtraction';
 
 describe('Payoneer extraction', () => {
+  test('flags an unfinished deposit', () => {
+    strictEqual(extractionDepositStatus({ isDeposit: true, depositHours: 40, weekIndex: 0 }, 40, 80), 'ongoing');
+  });
+  test('flags standard deposit completion only on the completing submission', () => {
+    strictEqual(extractionDepositStatus({ isDeposit: true, depositHours: 40, weekIndex: 1 }, 80, 80), 'complete');
+    strictEqual(extractionDepositStatus({ isDeposit: false, depositHours: 0, weekIndex: null }, 80, 80), 'none');
+  });
+  test('preserves explicit completion and excess flags', () => {
+    strictEqual(extractionDepositStatus({ isDeposit: true, depositHours: 20, weekIndex: 1, targetStatus: 'complete' }, 40, 40), 'complete');
+    strictEqual(extractionDepositStatus({ isDeposit: true, depositHours: 40, weekIndex: 1, targetStatus: 'excess' }, 80, 60), 'excess');
+  });
+  test('exports only individually selected submissions and permits selecting none', () => {
+    const rows = [{ id: 'a' }, { id: 'b' }];
+    deepStrictEqual(selectedExtractionRows(rows, new Set(['b'])), [{ id: 'b' }]);
+    deepStrictEqual(selectedExtractionRows(rows, new Set()), []);
+  });
   test('exports only the five requested fields, with invoice and bonus separate', () => {
     const csv = payoneerExtractionCSV([{
       week_ending_date: '2026-10-16', total_hours: 54.5, incentive_amount: 25,
