@@ -30,7 +30,6 @@ interface LegalDocRow {
   start_date: string;
   hours_per_week: number | null;
   hourly_rate: number | null;
-  assignment_notes: string | null;
 }
 
 interface StagedDoc {
