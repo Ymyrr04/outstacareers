@@ -30,28 +30,35 @@ describe('Payoneer extraction', () => {
   test('deselecting every deposit submission still extracts the no-deposit ones', () => {
     deepStrictEqual(extractionExportRows(rows, new Set()), [rows[0], rows[2]]);
   });
-  test('exports only the five requested fields, with invoice and bonus separate', () => {
+  test('exports the six requested fields, with invoice, bonus and their total separate', () => {
     const csv = payoneerExtractionCSV([{
       week_ending_date: '2026-10-16', total_hours: 54.5, incentive_amount: 25,
       contractor: { hourly_rate: 8, payoneer_email: 'pay@example.com', applicant: { full_name: 'Jane Doe' } },
     }]);
     deepStrictEqual(csv.split('\r\n')[0].split(','), [
-      'Name', 'Payoneer Email address', 'Invoice Amount', 'Bonus Amount', 'Invoice Week',
+      'Name', 'Payoneer Email address', 'Invoice Amount', 'Bonus Amount', 'Total', 'Invoice Week',
     ]);
-    strictEqual(csv.split('\r\n')[1], 'Jane Doe,pay@example.com,436.00,25.00,2026-10-16');
+    strictEqual(csv.split('\r\n')[1], 'Jane Doe,pay@example.com,436.00,25.00,461.00,2026-10-16');
+  });
+
+  test('always adds the bonus to the invoice in the total column', () => {
+    strictEqual(payoneerExtractionCSV([{
+      week_ending_date: '2026-10-16', total_hours: 18.5, incentive_amount: 110,
+      contractor: { hourly_rate: 8, payoneer_email: 'pay@example.com', applicant: { full_name: 'April Ann' } },
+    }]).split('\r\n')[1], 'April Ann,pay@example.com,148.00,110.00,258.00,2026-10-16');
   });
 
   test('keeps missing payment details blank rather than substituting the contact email', () => {
     strictEqual(payoneerExtractionCSV([{
       week_ending_date: '2026-10-16', total_hours: 40, incentive_amount: 0,
       contractor: { hourly_rate: null, payoneer_email: null, applicant: { full_name: 'Jane Doe' } },
-    }]).split('\r\n')[1], 'Jane Doe,,,0.00,2026-10-16');
+    }]).split('\r\n')[1], 'Jane Doe,,,0.00,,2026-10-16');
   });
 
   test('escapes commas, quotes and line breaks in names', () => {
     ok(payoneerExtractionCSV([{
       week_ending_date: '2026-10-16', total_hours: 0, incentive_amount: 0,
       contractor: { hourly_rate: 0, payoneer_email: 'pay@example.com', applicant: { full_name: 'Doe, "Jane"' } },
-    }]).includes('"Doe, ""Jane""",pay@example.com,0.00,0.00,2026-10-16'));
+    }]).includes('"Doe, ""Jane""",pay@example.com,0.00,0.00,0.00,2026-10-16'));
   });
 });

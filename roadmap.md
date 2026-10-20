@@ -34,3 +34,4 @@
 - [x] Standardise the assistant's user-facing name to "MarkBot AI" across the dashboard, panel, help desk and Markbot replies
 - [x] Remove the Payoneer request link field from the contractor timesheet form and reword the support line, confirmation checkbox and reminder emails to drop Payoneer wording
 - [x] Add "How soon can you start?" and "Do you have any plans for the next 3 months?" as text fields to the SIV screening note
+- [x] Payoneer extraction: add a Total column that always sums invoice + bonus
