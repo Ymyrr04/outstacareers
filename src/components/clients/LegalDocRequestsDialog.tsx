@@ -121,11 +121,11 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
       .from('contractor_legal_doc_requests' as any)
       .select(`
         id, doc_types, reason, status, admin_notes, created_at,
-        contractor_assignments (
-          job_title, start_date, hours_per_week, hourly_rate, notes,
-          applicants_prescreen ( full_name ),
-          clients ( company_name )
-        )
+          contractor_assignments (
+            job_title, start_date, hours_per_week, hourly_rate,
+            applicants_prescreen ( full_name ),
+            clients ( company_name )
+          )
       `)
       .order('created_at', { ascending: false });
 
