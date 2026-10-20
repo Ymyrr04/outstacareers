@@ -12,11 +12,6 @@ import { CoeGenerateDialog } from './CoeGenerateDialog';
 import { PdcGenerateDialog } from './PdcGenerateDialog';
 import { NewLegalDocForm } from './NewLegalDocForm';
 
-const extractNoteField = (notes: string | null, label: string): string => {
-  if (!notes) return '';
-  const re = new RegExp(`${label}:\\s*(.+?)(?=\\s+[A-Z][a-z]+ [A-Z]?[a-z]*:|$)`, 's');
-  return notes.match(re)?.[1]?.trim() || '';
-};
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed'] as const;
 type StatusFilter = 'All' | (typeof STATUS_OPTIONS)[number];
