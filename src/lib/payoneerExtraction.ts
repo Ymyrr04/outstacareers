@@ -13,7 +13,7 @@ export function extractionDepositRows<T extends { depositStatus: ExtractionDepos
   return rows.filter((row) => row.depositStatus !== 'none');
 }
 
-export function extractionExportRows<T extends { depositStatus: ExtractionDepositStatus }>(rows: T[], selectedDepositIds: Set<string>): T[] {
+export function extractionExportRows<T extends { id: string; depositStatus: ExtractionDepositStatus }>(rows: T[], selectedDepositIds: Set<string>): T[] {
   return rows.filter((row) => row.depositStatus === 'none' || selectedDepositIds.has(row.id));
 }
 
