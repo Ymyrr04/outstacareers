@@ -1,4 +1,4 @@
-import { computeDepositSchedule, type DepositWeek } from '@/lib/depositSchedule';
+import { computeDepositSchedule, requiredDepositHours, type DepositWeek } from '@/lib/depositSchedule';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,8 @@ import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetRemind
 import { parseDateOnly } from '@/lib/dateOnly';
 import { ColumnOrder } from '@/components/clients/ColumnOrder';
 import { Checkbox } from '@/components/ui/checkbox';
-import { payoneerExtractionCSV } from '@/lib/payoneerExtraction';
+import { payoneerExtractionCSV, extractionDepositStatus, type ExtractionDepositStatus, type PayoneerExtractionRow } from '@/lib/payoneerExtraction';
+import { PayoneerExtractionDialog } from '@/components/pl/PayoneerExtractionDialog';
 
 const PL_COLS: { key: string; label: string }[] = [
   { key: 'name', label: 'Contractor' }, { key: 'company', label: 'Company' }, { key: 'status', label: 'Status' },
@@ -345,6 +346,8 @@ export const PLDashboard = () => {
   const [resettingId, setResettingId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [depositByTs, setDepositByTs] = useState<Map<string, DepositWeek>>(new Map());
+  const [extractionStatusByTs, setExtractionStatusByTs] = useState<Map<string, ExtractionDepositStatus>>(new Map());
+  const [extractionRows, setExtractionRows] = useState<PayoneerExtractionRow[] | null>(null);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
   const mondayOf = (d: Date) => {
@@ -502,12 +505,16 @@ export const PLDashboard = () => {
       tsByAssign.set(t.contractor_assignment_id, arr);
     });
     const depMap = new Map<string, DepositWeek>();
+    const extractionStatuses = new Map<string, ExtractionDepositStatus>();
     const depositAccumMap = new Map<string, number>();
     tsByAssign.forEach((list, assignId) => {
       const ca = assignById.get(assignId) || list[0]?.contractor;
       if (!ca) return;
       const sched = computeDepositSchedule(ca, list);
+      let collectedHours = 0;
       sched.forEach((v, k) => {
+        collectedHours += v.depositHours;
+        extractionStatuses.set(k, extractionDepositStatus(v, collectedHours, requiredDepositHours(ca)));
         depMap.set(k, v);
         if (v.isDeposit && v.depositHours > 0) {
           depositAccumMap.set(assignId, (depositAccumMap.get(assignId) || 0) + v.depositHours * Number(ca.hourly_rate || 0));
@@ -515,6 +522,7 @@ export const PLDashboard = () => {
       });
     });
     setDepositByTs(depMap);
+    setExtractionStatusByTs(extractionStatuses);
 
     // Threshold contractors: Contractor Deposit auto-tracks the collected amount, capped at the threshold.
     const hasTarget = new Set<string>();
@@ -1179,8 +1187,15 @@ export const PLDashboard = () => {
     return m ? m[0] : null;
   };
 
-  const handlePayoneerExtraction = () => {
-    const exportRows = [...filtered, ...filteredInternal];
+  const openPayoneerExtraction = () => {
+    setExtractionRows([...filtered, ...filteredInternal].map((row) => ({
+      ...row,
+      depositStatus: extractionStatusByTs.get(row.id) || 'none',
+      excessAmount: computeDeposit(row).excessAmount || 0,
+    })));
+  };
+
+  const handlePayoneerExtraction = (exportRows: PayoneerExtractionRow[]) => {
     if (exportRows.length === 0) return;
     const blob = new Blob([payoneerExtractionCSV(exportRows)], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1195,6 +1210,7 @@ export const PLDashboard = () => {
     a.remove();
     URL.revokeObjectURL(url);
     toast({ title: 'Payoneer extraction', description: `${exportRows.length} submission(s) exported to CSV.` });
+    setExtractionRows(null);
   };
 
   const handleExtractCSV = async () => {
@@ -1950,7 +1966,7 @@ export const PLDashboard = () => {
               size="sm"
               variant="outline"
               className="h-8 text-xs gap-1 whitespace-nowrap"
-              onClick={handlePayoneerExtraction}
+              onClick={openPayoneerExtraction}
               disabled={loading || filtered.length + filteredInternal.length === 0}
               title="Download Payoneer payment details as CSV"
             >
@@ -2332,6 +2348,8 @@ export const PLDashboard = () => {
         </CollapsibleSection>
       )}
       </div>
+
+      {extractionRows && <PayoneerExtractionDialog rows={extractionRows} onClose={() => setExtractionRows(null)} onExtract={handlePayoneerExtraction} />}
 
       <Dialog open={reorderOpen} onOpenChange={setReorderOpen}>
         <DialogContent>

@@ -22,4 +22,4 @@
 - Gate Markbot tool result fields on the admin's own tab permissions and list hidden fields in the result, so data the admin may not see reads as "cannot check" instead of "none".
 - Keep stage-note templates in a shared admin-only store, scoped by stage with reusable question prompts separate from candidate answers; loading resets answers while note and calendar persistence remain unchanged.
 - Carry the original status through stage-email and stage-note dialogs and restore it with a conditional status update before updating pipeline caches, so cancellation cannot overwrite a subsequent admin move.
-- Keep the Payoneer extraction CSV field mapping in a pure tested helper, using the existing submission invoice calculation and separate bonus, so payment exports match the weekly table without changing report calculations.
+- Keep Payoneer extraction mapping, selection and deposit-review classification in pure tested helpers and a dedicated review dialog; derive flags from the unchanged deposit schedule, so payment exports match the weekly table without changing report calculations.

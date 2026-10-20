@@ -1,4 +1,19 @@
-interface PayoneerSubmission {
+import type { DepositWeek } from './depositSchedule';
+
+export type ExtractionDepositStatus = 'ongoing' | 'complete' | 'excess' | 'none';
+
+export function extractionDepositStatus(deposit: DepositWeek, collectedHours: number, requiredHours: number): ExtractionDepositStatus {
+  if (deposit.targetStatus === 'excess') return 'excess';
+  if (deposit.targetStatus === 'complete') return 'complete';
+  if (!deposit.isDeposit) return 'none';
+  return requiredHours > 0 && collectedHours >= requiredHours - 0.0001 ? 'complete' : 'ongoing';
+}
+
+export function selectedExtractionRows<T extends { id: string }>(rows: T[], ids: Set<string>): T[] {
+  return rows.filter((row) => ids.has(row.id));
+}
+
+export interface PayoneerSubmission {
   week_ending_date: string;
   total_hours: number;
   incentive_amount: number;
@@ -7,6 +22,12 @@ interface PayoneerSubmission {
     payoneer_email: string | null;
     applicant: { full_name: string } | null;
   } | null;
+}
+
+export interface PayoneerExtractionRow extends PayoneerSubmission {
+  id: string;
+  depositStatus: ExtractionDepositStatus;
+  excessAmount: number;
 }
 
 const csvCell = (value: string) => /[",\r\n]/.test(value)
