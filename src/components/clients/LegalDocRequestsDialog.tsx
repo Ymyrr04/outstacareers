@@ -146,8 +146,8 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         start_date: r.contractor_assignments?.start_date || '',
         hours_per_week: r.contractor_assignments?.hours_per_week ?? null,
         hourly_rate: r.contractor_assignments?.hourly_rate ?? null,
-        assignment_notes: r.contractor_assignments?.notes || null,
       })));
+
     }
     setLoading(false);
   }, [toast]);
