@@ -9,8 +9,12 @@ export function extractionDepositStatus(deposit: DepositWeek, collectedHours: nu
   return requiredHours > 0 && collectedHours >= requiredHours - 0.0001 ? 'complete' : 'ongoing';
 }
 
-export function selectedExtractionRows<T extends { id: string }>(rows: T[], ids: Set<string>): T[] {
-  return rows.filter((row) => ids.has(row.id));
+export function extractionDepositRows<T extends { depositStatus: ExtractionDepositStatus }>(rows: T[]): T[] {
+  return rows.filter((row) => row.depositStatus !== 'none');
+}
+
+export function extractionExportRows<T extends { depositStatus: ExtractionDepositStatus }>(rows: T[], selectedDepositIds: Set<string>): T[] {
+  return rows.filter((row) => row.depositStatus === 'none' || selectedDepositIds.has(row.id));
 }
 
 export interface PayoneerSubmission {
