@@ -1,6 +1,6 @@
 import { describe, it as test } from 'node:test';
 import { strictEqual, deepStrictEqual, ok } from 'node:assert';
-import { payoneerExtractionCSV, extractionDepositStatus, selectedExtractionRows } from './payoneerExtraction';
+import { payoneerExtractionCSV, extractionDepositStatus, extractionDepositRows, extractionExportRows } from './payoneerExtraction';
 
 describe('Payoneer extraction', () => {
   test('flags an unfinished deposit', () => {
