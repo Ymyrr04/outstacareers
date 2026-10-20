@@ -12,11 +12,6 @@ import { CoeGenerateDialog } from './CoeGenerateDialog';
 import { PdcGenerateDialog } from './PdcGenerateDialog';
 import { NewLegalDocForm } from './NewLegalDocForm';
 
-const extractNoteField = (notes: string | null, label: string): string => {
-  if (!notes) return '';
-  const re = new RegExp(`${label}:\\s*(.+?)(?=\\s+[A-Z][a-z]+ [A-Z]?[a-z]*:|$)`, 's');
-  return notes.match(re)?.[1]?.trim() || '';
-};
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed'] as const;
 type StatusFilter = 'All' | (typeof STATUS_OPTIONS)[number];
@@ -35,7 +30,6 @@ interface LegalDocRow {
   start_date: string;
   hours_per_week: number | null;
   hourly_rate: number | null;
-  assignment_notes: string | null;
 }
 
 interface StagedDoc {
@@ -127,11 +121,11 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
       .from('contractor_legal_doc_requests' as any)
       .select(`
         id, doc_types, reason, status, admin_notes, created_at,
-        contractor_assignments (
-          job_title, start_date, hours_per_week, hourly_rate, notes,
-          applicants_prescreen ( full_name ),
-          clients ( company_name )
-        )
+          contractor_assignments (
+            job_title, start_date, hours_per_week, hourly_rate,
+            applicants_prescreen ( full_name ),
+            clients ( company_name )
+          )
       `)
       .order('created_at', { ascending: false });
 
@@ -152,8 +146,8 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         start_date: r.contractor_assignments?.start_date || '',
         hours_per_week: r.contractor_assignments?.hours_per_week ?? null,
         hourly_rate: r.contractor_assignments?.hourly_rate ?? null,
-        assignment_notes: r.contractor_assignments?.notes || null,
       })));
+
     }
     setLoading(false);
   }, [toast]);
@@ -379,10 +373,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         contractorName={coeRow.contractor_name}
         onApprove={(doc) => stageDoc(coeRow.id, doc)}
         data={{
-          fullName:
-            extractNoteField(coeRow.assignment_notes, 'Preferred Name') ||
-            extractNoteField(coeRow.assignment_notes, 'Full Name') ||
-            (coeRow.contractor_name === 'Unknown contractor' ? '' : coeRow.contractor_name),
+          fullName: coeRow.contractor_name === 'Unknown contractor' ? '' : coeRow.contractor_name,
           role: coeRow.job_title,
           startDate: coeRow.start_date,
           hoursPerWeek: coeRow.hours_per_week,
