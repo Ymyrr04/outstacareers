@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Add Payoneer extraction to weekly submissions with only name, Payoneer email, invoice amount, bonus amount and invoice week; verify CSV download.
 - [x] Tick "Add to calendar" by default when a candidate moves from Qualified to For Interview; verified in the browser without moving a real candidate.
 - [x] Add Cancel beside Save note to restore the original candidate stage without saving notes or calendar activities; verified cancellation and failed-restore retry with real-record writes blocked.
 - [x] Add shared named stage-note templates with save, load, delete and fresh question answers; verify without moving real candidates.

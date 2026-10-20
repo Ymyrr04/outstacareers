@@ -28,6 +28,7 @@ import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetRemind
 import { parseDateOnly } from '@/lib/dateOnly';
 import { ColumnOrder } from '@/components/clients/ColumnOrder';
 import { Checkbox } from '@/components/ui/checkbox';
+import { payoneerExtractionCSV } from '@/lib/payoneerExtraction';
 
 const PL_COLS: { key: string; label: string }[] = [
   { key: 'name', label: 'Contractor' }, { key: 'company', label: 'Company' }, { key: 'status', label: 'Status' },
@@ -1178,6 +1179,24 @@ export const PLDashboard = () => {
     return m ? m[0] : null;
   };
 
+  const handlePayoneerExtraction = () => {
+    const exportRows = [...filtered, ...filteredInternal];
+    if (exportRows.length === 0) return;
+    const blob = new Blob([payoneerExtractionCSV(exportRows)], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const weekLabel = weekMonday
+      ? `${format(weekMonday, 'yyyy-MM-dd')}_to_${format(new Date(weekMonday.getTime() + 6 * 86400000), 'yyyy-MM-dd')}`
+      : 'all-weeks';
+    a.href = url;
+    a.download = `payoneer-extraction_${weekLabel}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Payoneer extraction', description: `${exportRows.length} submission(s) exported to CSV.` });
+  };
+
   const handleExtractCSV = async () => {
     // Export external submissions plus the internal OutSta team (listed last).
     const exportRows = [...filtered, ...filteredInternal];
@@ -1927,6 +1946,17 @@ export const PLDashboard = () => {
               <Download className="w-3.5 h-3.5" />
               Extract
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1 whitespace-nowrap"
+              onClick={handlePayoneerExtraction}
+              disabled={loading || filtered.length + filteredInternal.length === 0}
+              title="Download Payoneer payment details as CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Payoneer extraction
+            </Button>
           </div>
         }
       >
@@ -2606,7 +2636,7 @@ export const PLDashboard = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <Label className="text-xs">Break duration</Label>
-                          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
                             <Input
                               type="number"
                               min="0"
