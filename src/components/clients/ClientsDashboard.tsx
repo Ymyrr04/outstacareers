@@ -747,7 +747,7 @@ export const ClientsDashboard = () => {
       {/* Client Detail Panel */}
       {selectedClient && (
         <ClientDetailPanel
-          client={selectedClient}
+          client={clients.find((c) => c.id === selectedClient.id) ?? selectedClient}
           onClose={() => setSelectedClient(null)}
           onUpdate={fetchClients}
         />

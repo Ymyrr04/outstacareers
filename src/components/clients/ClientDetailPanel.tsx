@@ -87,17 +87,25 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
   const [communications, setCommunications] = useState<ClientCommunication[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [editForm, setEditForm] = useState({
-    company_name: client.company_name,
-    industry: client.industry || '',
-    leads_from: client.leads_from || '',
-    company_links: client.company_links || '',
-    profile_links: (client.profile_links || []).join('\n'),
-    yearly_increase: client.yearly_increase || false,
-    is_hiring: client.is_hiring || false,
-    contractor_count: client.contractor_count || 0,
-    notes: client.notes || '',
+  const buildEditForm = (c: Client) => ({
+    company_name: c.company_name,
+    industry: c.industry || '',
+    leads_from: c.leads_from || '',
+    company_links: c.company_links || '',
+    profile_links: (c.profile_links || []).join('\n'),
+    yearly_increase: c.yearly_increase || false,
+    is_hiring: c.is_hiring || false,
+    contractor_count: c.contractor_count || 0,
+    notes: c.notes || '',
   });
+
+  const [editForm, setEditForm] = useState(() => buildEditForm(client));
+
+  // Keep the edit form aligned with the freshest client data while the panel is
+  // not being edited, so a save never leaves stale values behind.
+  useEffect(() => {
+    if (!editing) setEditForm(buildEditForm(client));
+  }, [client, editing]);
 
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addContractorOpen, setAddContractorOpen] = useState(false);
