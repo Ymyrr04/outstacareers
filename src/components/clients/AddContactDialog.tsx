@@ -27,6 +27,7 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
     role: '',
     is_primary: false,
     notes: '',
+    profile_links: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +64,7 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
         role: form.role.trim() || null,
         is_primary: form.is_primary,
         notes: form.notes.trim() || null,
+        profile_links: form.profile_links.split('\n').map((l) => l.trim()).filter(Boolean),
       });
 
       if (error) throw error;
@@ -77,6 +79,7 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
         role: '',
         is_primary: false,
         notes: '',
+        profile_links: '',
       });
 
       onOpenChange(false);
@@ -149,6 +152,17 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
               placeholder="e.g. HR Manager, CEO"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="profile_links">Profile Links (one per line)</Label>
+            <Textarea
+              id="profile_links"
+              value={form.profile_links}
+              onChange={(e) => setForm({ ...form, profile_links: e.target.value })}
+              placeholder="https://linkedin.com/in/..."
+              rows={2}
             />
           </div>
 

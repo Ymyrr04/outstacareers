@@ -288,6 +288,13 @@
       "when": 1792431794727,
       "tag": "0040_create_stage_note_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792593945251,
+      "tag": "0041_client_contact_profile_links",
+      "breakpoints": true
     }
   ]
 }
