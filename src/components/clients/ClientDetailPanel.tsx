@@ -392,7 +392,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
 
   return (
     <Sheet open={true} onOpenChange={() => onClose()}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+      <SheetContent aria-describedby={undefined} className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader className="flex flex-row items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
