@@ -78,6 +78,14 @@ interface Props {
 }
 
 export function StageNoteDialog({ pending, onOpenChange, onSaved, onCancel }: Props) {
+  if (!pending) return null;
+
+  // A draft belongs to one stage move only. Closing unmounts the entire
+  // draft; switching candidates/stages creates fresh state before rendering.
+  return <StageNoteSession key={`${pending.applicantId}:${pending.previousStatus}:${pending.newStatus}`} pending={pending} onOpenChange={onOpenChange} onSaved={onSaved} onCancel={onCancel} />;
+}
+
+function StageNoteSession({ pending, onOpenChange, onSaved, onCancel }: Props & { pending: PendingStageNote }) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
