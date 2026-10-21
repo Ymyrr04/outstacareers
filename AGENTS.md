@@ -24,4 +24,4 @@
 - Scope stage-note draft state to a mounted candidate/stage-move session and synchronize external rich-text values without emitting user updates, so resets cannot carry another applicant's draft into the next note.
 - Carry the original status through stage-email and stage-note dialogs and restore it with a conditional status update before updating pipeline caches, so cancellation cannot overwrite a subsequent admin move.
 - Keep Payoneer extraction mapping, selection and deposit-review classification in pure tested helpers and a dedicated review dialog; derive flags from the unchanged deposit schedule, so payment exports match the weekly table without changing report calculations.
-- Store company profile descriptions on clients and edit them in a client-keyed dedicated tab using NotesEditor and FormattedNotes, so summaries stay separate from contact records and existing notes.
+- Store ordered company profile sections on clients with legacy description fallback and a rich-text mirror; use a client-keyed tab, NotesEditor and FormattedNotes to keep summaries separate from contacts and notes.
