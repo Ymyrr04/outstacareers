@@ -1156,6 +1156,7 @@ export type Database = {
           address: string | null
           calendar_notes: Json | null
           client_profile: string | null
+          client_profile_sections: Json | null
           company_links: string | null
           company_name: string
           contractor_count: number | null
@@ -1174,6 +1175,7 @@ export type Database = {
           address?: string | null
           calendar_notes?: Json | null
           client_profile?: string | null
+          client_profile_sections?: Json | null
           company_links?: string | null
           company_name: string
           contractor_count?: number | null
@@ -1192,6 +1194,7 @@ export type Database = {
           address?: string | null
           calendar_notes?: Json | null
           client_profile?: string | null
+          client_profile_sections?: Json | null
           company_links?: string | null
           company_name?: string
           contractor_count?: number | null
