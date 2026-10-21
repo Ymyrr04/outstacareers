@@ -27,6 +27,7 @@ export interface Client {
   leads_from: string | null;
   company_links: string | null;
   profile_links?: string[] | null;
+  client_profile?: string | null;
   yearly_increase: boolean;
   contractor_count: number;
   is_hiring: boolean;
