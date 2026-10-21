@@ -649,7 +649,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
             </TabsList>
 
             <TabsContent value="profile">
-              <ClientProfileTab key={client.id} clientId={client.id} profile={client.client_profile || null} onUpdate={onUpdate} />
+              <ClientProfileTab key={client.id} clientId={client.id} profile={client.client_profile || null} sections={client.client_profile_sections} onUpdate={onUpdate} />
             </TabsContent>
 
             {/* Contacts Tab */}

@@ -2,37 +2,42 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { NotesEditor } from '@/components/NotesEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { addClientProfileSection, clientProfileSectionsHtml, loadClientProfileSections } from '@/lib/clientProfileSections';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Edit2, Loader2, Save } from 'lucide-react';
+import { Edit2, Loader2, Plus, Save } from 'lucide-react';
 
 interface ClientProfileTabProps {
   clientId: string;
   profile: string | null;
+  sections: unknown;
   onUpdate: () => void;
 }
 
-export function ClientProfileTab({ clientId, profile, onUpdate }: ClientProfileTabProps) {
-  const [savedProfile, setSavedProfile] = useState(profile || '');
-  const [draft, setDraft] = useState(profile || '');
+export function ClientProfileTab({ clientId, profile, sections, onUpdate }: ClientProfileTabProps) {
+  const [savedSections, setSavedSections] = useState(() => loadClientProfileSections(sections, profile));
+  const [draft, setDraft] = useState(() => loadClientProfileSections(sections, profile));
+  const [sectionTitle, setSectionTitle] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    setSavedProfile(profile || '');
-  }, [profile]);
+    setSavedSections(loadClientProfileSections(sections, profile));
+  }, [profile, sections]);
 
   const saveProfile = async () => {
     setSaving(true);
     try {
       const { data, error } = await supabase.from('clients')
-        .update({ client_profile: draft.trim() || null })
+        .update({ client_profile_sections: draft.map(section => ({ ...section })), client_profile: clientProfileSectionsHtml(draft) })
         .eq('id', clientId)
-        .select('client_profile')
+        .select('client_profile, client_profile_sections')
         .single();
       if (error) throw error;
-      setSavedProfile(data.client_profile || '');
+      setSavedSections(loadClientProfileSections(data.client_profile_sections, data.client_profile));
       setEditing(false);
       onUpdate();
       toast({ title: 'Client profile saved' });
@@ -60,18 +65,36 @@ export function ClientProfileTab({ clientId, profile, onUpdate }: ClientProfileT
             </Button>
           </div>
         ) : (
-          <Button size="sm" variant="outline" onClick={() => { setDraft(savedProfile); setEditing(true); }}>
+          <Button size="sm" variant="outline" onClick={() => { setDraft(savedSections.map(section => ({ ...section }))); setSectionTitle(''); setEditing(true); }}>
             <Edit2 className="w-4 h-4 mr-1" />
-            {savedProfile ? 'Edit profile' : 'Add profile'}
+            Edit profile
           </Button>
         )}
       </div>
+      <div className="space-y-5">
+        {(editing ? draft : savedSections).map(section => (
+          <section key={section.id} className="min-w-0 space-y-2 border-t pt-3 break-words">
+            <h4 className="text-sm font-semibold">{section.title}</h4>
+            {editing ? (
+              <NotesEditor value={section.content} onChange={content => setDraft(current => current.map(item => item.id === section.id ? { ...item, content } : item))} placeholder="Add description..." minHeight="100px" disabled={saving} />
+            ) : section.content ? <FormattedNotes content={section.content} /> : <p className="text-sm text-muted-foreground">Not added yet.</p>}
+          </section>
+        ))}
+      </div>
       {editing ? (
-        <NotesEditor value={draft} onChange={setDraft} placeholder="Client summary description..." minHeight="180px" disabled={saving} />
-      ) : savedProfile ? (
-        <div className="min-w-0 break-words"><FormattedNotes content={savedProfile} /></div>
+        <div className="space-y-2 border-t pt-3">
+          <Label htmlFor="new-profile-section">Section name</Label>
+          <div className="flex flex-wrap gap-2">
+            <Input id="new-profile-section" className="flex-1 min-w-0" value={sectionTitle} onChange={event => setSectionTitle(event.target.value)} disabled={saving} placeholder="New section name" />
+            <Button size="sm" variant="outline" disabled={saving || !sectionTitle.trim()} onClick={() => { setDraft(current => addClientProfileSection(current, sectionTitle, crypto.randomUUID())); setSectionTitle(''); }}>
+              <Plus className="w-4 h-4 mr-1" />Add section
+            </Button>
+          </div>
+        </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No client profile yet.</p>
+        <Button size="sm" variant="outline" onClick={() => { setDraft(savedSections.map(section => ({ ...section }))); setSectionTitle(''); setEditing(true); }}>
+          <Plus className="w-4 h-4 mr-1" />Add section
+        </Button>
       )}
     </div>
   );

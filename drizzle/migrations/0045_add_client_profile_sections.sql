@@ -1,0 +1,2 @@
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS client_profile_sections jsonb;
+COMMENT ON COLUMN public.clients.client_profile_sections IS 'Ordered client profile sections with title and rich text content; null falls back to legacy client_profile';
