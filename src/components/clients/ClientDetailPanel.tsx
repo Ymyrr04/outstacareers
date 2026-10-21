@@ -22,6 +22,7 @@ import { AddContactDialog } from './AddContactDialog';
 import { AddContractorDialog } from './AddContractorDialog';
 import { AddCommunicationDialog } from './AddCommunicationDialog';
 import { ClientPortalAccountsSection } from './ClientPortalAccountsSection';
+import { ClientProfileTab } from './ClientProfileTab';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDateTime } from "@/lib/dateFormat";
 
@@ -624,7 +625,11 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
 
           {/* Tabs */}
           <Tabs defaultValue="contacts" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="flex w-full h-auto flex-wrap gap-1">
+              <TabsTrigger value="profile" className="flex flex-1 items-center gap-1">
+                <FileText className="w-4 h-4" />
+                Client Profile
+              </TabsTrigger>
               <TabsTrigger value="contacts" className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
                 Contacts ({contacts.length})
@@ -642,6 +647,10 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                 Portal
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="profile">
+              <ClientProfileTab key={client.id} clientId={client.id} profile={client.client_profile || null} onUpdate={onUpdate} />
+            </TabsContent>
 
             {/* Contacts Tab */}
             <TabsContent value="contacts" className="space-y-3">
