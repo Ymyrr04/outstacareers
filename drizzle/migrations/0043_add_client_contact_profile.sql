@@ -1,0 +1,2 @@
+ALTER TABLE public.client_contacts ADD COLUMN IF NOT EXISTS client_profile text;
+COMMENT ON COLUMN public.client_contacts.client_profile IS 'Optional written client contact profile, separate from notes and profile links';
