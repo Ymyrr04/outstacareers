@@ -12,16 +12,24 @@ const defaultTitles = [
   'Chemistry — Working Style Compatibility',
 ];
 
+function withTopFields(sections: ClientProfileSection[]): ClientProfileSection[] {
+  const fields = ['Rate', 'Time zone'].map((title, index) =>
+    sections.find(section => section.title.trim().toLowerCase() === title.toLowerCase()) ||
+    { id: `profile-field-${index}`, title, content: '' });
+  const fieldIds = new Set(fields.map(field => field.id));
+  return [...fields, ...sections.filter(section => !fieldIds.has(section.id))];
+}
+
 export function loadClientProfileSections(value: unknown, legacyProfile: string | null): ClientProfileSection[] {
   if (Array.isArray(value)) {
     const sections = value.filter((item): item is ClientProfileSection =>
       !!item && typeof item === 'object' && typeof item.id === 'string' &&
       typeof item.title === 'string' && typeof item.content === 'string');
-    if (sections.length) return sections.map(section => ({ ...section }));
+    if (sections.length) return withTopFields(sections.map(section => ({ ...section })));
   }
-  return defaultTitles.map((title, index) => ({
+  return withTopFields(defaultTitles.map((title, index) => ({
     id: `default-${index}`, title, content: index === 0 ? legacyProfile || '' : '',
-  }));
+  })));
 }
 
 export function addClientProfileSection(sections: ClientProfileSection[], title: string, id: string): ClientProfileSection[] {
