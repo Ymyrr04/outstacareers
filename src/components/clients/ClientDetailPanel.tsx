@@ -103,8 +103,8 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
   const [addCommunicationOpen, setAddCommunicationOpen] = useState(false);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactEditForm, setContactEditForm] = useState<{
-    full_name: string; first_name: string; last_name: string; email: string; phone: string; role: string; notes: string;
-  }>({ full_name: '', first_name: '', last_name: '', email: '', phone: '', role: '', notes: '' });
+    full_name: string; first_name: string; last_name: string; email: string; phone: string; role: string; notes: string; profile_links: string;
+  }>({ full_name: '', first_name: '', last_name: '', email: '', phone: '', role: '', notes: '', profile_links: '' });
   const [savingContact, setSavingContact] = useState(false);
   const [existingIndustries, setExistingIndustries] = useState<string[]>([]);
   const [existingSources, setExistingSources] = useState<string[]>([]);
@@ -293,6 +293,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
       phone: contact.phone || '',
       role: contact.role || '',
       notes: contact.notes || '',
+      profile_links: (contact.profile_links || []).join('\n'),
     });
   };
 
@@ -311,6 +312,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
           phone: contactEditForm.phone.trim() || null,
           role: contactEditForm.role.trim() || null,
           notes: contactEditForm.notes.trim() || null,
+          profile_links: contactEditForm.profile_links.split('\n').map((l) => l.trim()).filter(Boolean),
         })
         .eq('id', editingContactId);
       if (error) throw error;
@@ -667,6 +669,16 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                               placeholder="e.g. HR Manager"
                             />
                           </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Profile Links (one per line)</Label>
+                            <Textarea
+                              value={contactEditForm.profile_links}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, profile_links: e.target.value })}
+                              className="text-sm"
+                              rows={2}
+                              placeholder="https://linkedin.com/in/..."
+                            />
+                          </div>
                           <div className="flex gap-2 justify-end">
                             <Button variant="ghost" size="sm" onClick={() => setEditingContactId(null)}>Cancel</Button>
                             <Button size="sm" onClick={handleSaveContact} disabled={savingContact}>
@@ -706,6 +718,23 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                                   </span>
                                 )}
                               </div>
+                              {(contact.profile_links || []).length > 0 && (
+                                <div className="flex flex-col gap-0.5 mt-1 text-sm">
+                                  {(contact.profile_links || []).map((link) => (
+                                    <a
+                                      key={link}
+                                      href={/^https?:\/\//i.test(link) ? link : `https://${link}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-1 text-primary hover:underline break-all"
+                                    >
+                                      <Link className="w-3 h-3 shrink-0" />
+                                      {link}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="flex gap-1">

@@ -45,6 +45,7 @@ export interface ClientContact {
   role: string | null;
   is_primary: boolean;
   notes: string | null;
+  profile_links?: string[] | null;
   created_at: string;
 }
 
