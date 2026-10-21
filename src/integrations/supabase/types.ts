@@ -1155,6 +1155,7 @@ export type Database = {
         Row: {
           address: string | null
           calendar_notes: Json | null
+          client_profile: string | null
           company_links: string | null
           company_name: string
           contractor_count: number | null
@@ -1172,6 +1173,7 @@ export type Database = {
         Insert: {
           address?: string | null
           calendar_notes?: Json | null
+          client_profile?: string | null
           company_links?: string | null
           company_name: string
           contractor_count?: number | null
@@ -1189,6 +1191,7 @@ export type Database = {
         Update: {
           address?: string | null
           calendar_notes?: Json | null
+          client_profile?: string | null
           company_links?: string | null
           company_name?: string
           contractor_count?: number | null
