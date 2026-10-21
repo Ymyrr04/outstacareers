@@ -87,16 +87,25 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
   const [communications, setCommunications] = useState<ClientCommunication[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [editForm, setEditForm] = useState({
-    company_name: client.company_name,
-    industry: client.industry || '',
-    leads_from: client.leads_from || '',
-    company_links: client.company_links || '',
-    yearly_increase: client.yearly_increase || false,
-    is_hiring: client.is_hiring || false,
-    contractor_count: client.contractor_count || 0,
-    notes: client.notes || '',
+  const buildEditForm = (c: Client) => ({
+    company_name: c.company_name,
+    industry: c.industry || '',
+    leads_from: c.leads_from || '',
+    company_links: c.company_links || '',
+    profile_links: (c.profile_links || []).join('\n'),
+    yearly_increase: c.yearly_increase || false,
+    is_hiring: c.is_hiring || false,
+    contractor_count: c.contractor_count || 0,
+    notes: c.notes || '',
   });
+
+  const [editForm, setEditForm] = useState(() => buildEditForm(client));
+
+  // Keep the edit form aligned with the freshest client data while the panel is
+  // not being edited, so a save never leaves stale values behind.
+  useEffect(() => {
+    if (!editing) setEditForm(buildEditForm(client));
+  }, [client, editing]);
 
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addContractorOpen, setAddContractorOpen] = useState(false);
@@ -190,6 +199,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
           industry: editForm.industry.trim() || null,
           leads_from: editForm.leads_from.trim() || null,
           company_links: editForm.company_links.trim() || null,
+          profile_links: editForm.profile_links.split('\n').map((l) => l.trim()).filter(Boolean),
           yearly_increase: editForm.yearly_increase,
           is_hiring: editForm.is_hiring,
           contractor_count: editForm.contractor_count,
@@ -506,6 +516,16 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                     rows={2}
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label htmlFor="client_profile_links" className="text-xs text-muted-foreground">Profile Links (one per line)</Label>
+                  <Textarea
+                    id="client_profile_links"
+                    value={editForm.profile_links}
+                    onChange={(e) => setEditForm({ ...editForm, profile_links: e.target.value })}
+                    rows={2}
+                    placeholder="https://www.linkedin.com/company/..."
+                  />
+                </div>
                 <div className="flex gap-6">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -557,6 +577,25 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                   <div className="col-span-2">
                     <span className="text-xs text-muted-foreground">Company Links</span>
                     <p className="font-medium break-all">{client.company_links}</p>
+                  </div>
+                )}
+                {(client.profile_links || []).length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-xs text-muted-foreground">Profile Links</span>
+                    <div className="flex flex-col gap-0.5 mt-0.5">
+                      {(client.profile_links || []).map((link) => (
+                        <a
+                          key={link}
+                          href={/^https?:\/\//i.test(link) ? link : `https://${link}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-primary hover:underline break-all"
+                        >
+                          <Link className="w-3 h-3 shrink-0" />
+                          {link}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

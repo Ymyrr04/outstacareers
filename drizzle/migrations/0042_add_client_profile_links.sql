@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS profile_links text[] NOT NULL DEFAULT '{}';

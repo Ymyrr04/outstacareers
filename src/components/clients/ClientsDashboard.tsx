@@ -26,6 +26,7 @@ export interface Client {
   notes: string | null;
   leads_from: string | null;
   company_links: string | null;
+  profile_links?: string[] | null;
   yearly_increase: boolean;
   contractor_count: number;
   is_hiring: boolean;
@@ -746,7 +747,7 @@ export const ClientsDashboard = () => {
       {/* Client Detail Panel */}
       {selectedClient && (
         <ClientDetailPanel
-          client={selectedClient}
+          client={clients.find((c) => c.id === selectedClient.id) ?? selectedClient}
           onClose={() => setSelectedClient(null)}
           onUpdate={fetchClients}
         />

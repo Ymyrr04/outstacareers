@@ -295,6 +295,13 @@
       "when": 1792593945251,
       "tag": "0041_client_contact_profile_links",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792594248933,
+      "tag": "0042_add_client_profile_links",
+      "breakpoints": true
     }
   ]
 }
