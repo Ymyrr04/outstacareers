@@ -904,6 +904,7 @@ export type Database = {
       client_contacts: {
         Row: {
           client_id: string
+          client_profile: string | null
           created_at: string
           email: string | null
           first_name: string | null
@@ -919,6 +920,7 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          client_profile?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
@@ -934,6 +936,7 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          client_profile?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
