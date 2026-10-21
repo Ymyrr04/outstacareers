@@ -1161,6 +1161,7 @@ export type Database = {
           is_hiring: boolean | null
           leads_from: string | null
           notes: string | null
+          profile_links: string[]
           updated_at: string
           website: string | null
           yearly_increase: boolean | null
@@ -1177,6 +1178,7 @@ export type Database = {
           is_hiring?: boolean | null
           leads_from?: string | null
           notes?: string | null
+          profile_links?: string[]
           updated_at?: string
           website?: string | null
           yearly_increase?: boolean | null
@@ -1193,6 +1195,7 @@ export type Database = {
           is_hiring?: boolean | null
           leads_from?: string | null
           notes?: string | null
+          profile_links?: string[]
           updated_at?: string
           website?: string | null
           yearly_increase?: boolean | null
