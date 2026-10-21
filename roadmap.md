@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Add a separate Client Profile tab for saving and editing a company summary description.
+- [x] Add a separate Client Profile tab for a company summary description; verified saving, editing, cancellation and clearing with real-record writes intercepted.
 - [x] Add clickable profile links (e.g. LinkedIn) to client contacts and the Company Information section; verified save, display, clearing and that the panel refreshes after saving.
 - [x] Prevent note drafts carrying over between applicant tiles; verified fresh drafts, separate saved notes, SIV answers and cancellation without changing real candidates.
 - [x] Add deposit-status review and individual selection before Payoneer extraction; verified live flags, empty-selection disabling, selected-only download and seven tests.
