@@ -509,8 +509,9 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Profile Links (one per line)</Label>
+                  <Label htmlFor="client_profile_links" className="text-xs text-muted-foreground">Profile Links (one per line)</Label>
                   <Textarea
+                    id="client_profile_links"
                     value={editForm.profile_links}
                     onChange={(e) => setEditForm({ ...editForm, profile_links: e.target.value })}
                     rows={2}
