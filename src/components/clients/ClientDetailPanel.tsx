@@ -508,6 +508,15 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                     rows={2}
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Profile Links (one per line)</Label>
+                  <Textarea
+                    value={editForm.profile_links}
+                    onChange={(e) => setEditForm({ ...editForm, profile_links: e.target.value })}
+                    rows={2}
+                    placeholder="https://www.linkedin.com/company/..."
+                  />
+                </div>
                 <div className="flex gap-6">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -559,6 +568,25 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                   <div className="col-span-2">
                     <span className="text-xs text-muted-foreground">Company Links</span>
                     <p className="font-medium break-all">{client.company_links}</p>
+                  </div>
+                )}
+                {(client.profile_links || []).length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-xs text-muted-foreground">Profile Links</span>
+                    <div className="flex flex-col gap-0.5 mt-0.5">
+                      {(client.profile_links || []).map((link) => (
+                        <a
+                          key={link}
+                          href={/^https?:\/\//i.test(link) ? link : `https://${link}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-primary hover:underline break-all"
+                        >
+                          <Link className="w-3 h-3 shrink-0" />
+                          {link}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
