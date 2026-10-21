@@ -192,7 +192,10 @@ export function WysiwygEditor({
   // Sync external value changes
   useEffect(() => {
     if (editor && value !== editor.getHTML() && value !== (editor.getHTML() === '<p></p>' ? '' : editor.getHTML())) {
-      editor.commands.setContent(value || '');
+      // Prop-driven resets/template loads are not user edits. Tiptap v3
+      // emits updates by default, which can write a stale value back to
+      // the parent while a new applicant's dialog is resetting.
+      editor.commands.setContent(value || '', { emitUpdate: false });
     }
   }, [value, editor]);
 

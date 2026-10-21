@@ -21,5 +21,6 @@
 - Save Markbot user messages (and new conversations) only together with the generated answer, so failed requests leave no unanswered questions in history.
 - Gate Markbot tool result fields on the admin's own tab permissions and list hidden fields in the result, so data the admin may not see reads as "cannot check" instead of "none".
 - Keep stage-note templates in a shared admin-only store, scoped by stage with reusable question prompts separate from candidate answers; loading resets answers while note and calendar persistence remain unchanged.
+- Scope stage-note draft state to a mounted candidate/stage-move session and synchronize external rich-text values without emitting user updates, so resets cannot carry another applicant's draft into the next note.
 - Carry the original status through stage-email and stage-note dialogs and restore it with a conditional status update before updating pipeline caches, so cancellation cannot overwrite a subsequent admin move.
 - Keep Payoneer extraction mapping, selection and deposit-review classification in pure tested helpers and a dedicated review dialog; derive flags from the unchanged deposit schedule, so payment exports match the weekly table without changing report calculations.

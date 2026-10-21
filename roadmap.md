@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Prevent note drafts carrying over between applicant tiles; verify fresh sessions, template loading and saved-note content without changing real candidates.
 - [x] Add deposit-status review and individual selection before Payoneer extraction; verified live flags, empty-selection disabling, selected-only download and seven tests.
 - [x] Payoneer extraction now always includes submissions with no deposit and lists only deposit submissions for selection; verified live 111 always-included plus 3 deposit rows, deselect-one export of 113 rows, and nine tests.
 - [x] Add Payoneer extraction to weekly submissions with only name, Payoneer email, invoice amount, bonus amount and invoice week; verified signed-in CSV download and three tests.
