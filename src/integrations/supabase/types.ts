@@ -913,6 +913,7 @@ export type Database = {
           last_name: string | null
           notes: string | null
           phone: string | null
+          profile_links: string[]
           role: string | null
           updated_at: string
         }
@@ -927,6 +928,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          profile_links?: string[]
           role?: string | null
           updated_at?: string
         }
@@ -941,6 +943,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          profile_links?: string[]
           role?: string | null
           updated_at?: string
         }
