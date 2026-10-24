@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Give rendering contractors 24 extra hours after their end date before portal deactivation; verify final-timesheet access and cutoff.
 - [x] Add Rate and Time zone above Client Overview for new and saved profiles; verified save/reload with writes intercepted and four tests; fixed the client panel accessibility warning.
 - [x] Make Client Profile section-based with five default headings and Add section; verified preservation, save, reload and cancellation with writes intercepted; three tests passed.
 - [x] Add a separate Client Profile tab for a company summary description; verified saving, editing, cancellation and clearing with real-record writes intercepted.
