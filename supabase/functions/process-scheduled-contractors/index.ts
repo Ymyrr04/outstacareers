@@ -1,9 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { renderingDeactivationCutoff } from "../_shared/renderingGrace.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,13 +8,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey) throw new Error("Missing server configuration");
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const renderingCutoff = renderingDeactivationCutoff(now);
     const results: string[] = [];
 
     // --- 1. Activate scheduled contractors whose start_date has arrived ---
@@ -49,13 +49,14 @@ Deno.serve(async (req) => {
       results.push(`Activated ${scheduledContractors.length}: ${names}`);
     }
 
-    // --- 2. Transition rendering contractors whose end_date has passed ---
+    // --- 2. Keep rendering portal access for one extra daily run (24 hours) ---
+    // Status cleanup deletes portal mappings, so defer the transition, not the end date.
     const { data: renderingContractors, error: fetchRenderingError } = await supabase
       .from('contractor_assignments')
       .select('id, end_date, notes, applicant:applicants_prescreen(full_name)')
       .eq('status', 'rendering')
       .not('end_date', 'is', null)
-      .lte('end_date', today);
+      .lte('end_date', renderingCutoff);
 
     if (fetchRenderingError) throw fetchRenderingError;
 
@@ -68,7 +69,9 @@ Deno.serve(async (req) => {
         const { error: updateError } = await supabase
           .from('contractor_assignments')
           .update({ status: finalStatus })
-          .eq('id', contractor.id);
+          .eq('id', contractor.id)
+          .eq('status', 'rendering')
+          .eq('end_date', contractor.end_date);
 
         if (updateError) {
           console.error(`Failed to transition contractor ${contractor.id}:`, updateError);
