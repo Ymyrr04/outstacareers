@@ -25,3 +25,4 @@
 - Carry the original status through stage-email and stage-note dialogs and restore it with a conditional status update before updating pipeline caches, so cancellation cannot overwrite a subsequent admin move.
 - Keep Payoneer extraction mapping, selection and deposit-review classification in pure tested helpers and a dedicated review dialog; derive flags from the unchanged deposit schedule, so payment exports match the weekly table without changing report calculations.
 - Store ordered company profile sections on clients with legacy description fallback and a rich-text mirror; use a client-keyed tab, NotesEditor and FormattedNotes to keep summaries separate from contacts and notes.
+- Apply rendering portal grace in the scheduled status-transition cutoff through a tested shared helper; keep the stored end date and existing portal cleanup unchanged so financial dates and final-invoice access do not diverge.
