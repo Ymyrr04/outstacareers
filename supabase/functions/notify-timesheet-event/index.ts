@@ -571,9 +571,11 @@ Deno.serve(async (req) => {
 
     if (body.event === 'process_timesheet_digests') {
       const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i,'');
-      if (!token) return new Response(JSON.stringify({error:'Unauthorized'}),{status:401,headers:{...corsHeaders,'Content-Type':'application/json'}});
-      if (token !== supabaseServiceKey) {
-        const {data: auth,error: authError} = await supabase.auth.getUser(token);
+      const internalSecret = req.headers.get('x-internal-secret');
+      const internal = Boolean(internalSecret && [Deno.env.get('KNOWLEDGE_JOB_SECRET'),Deno.env.get('KNOWLEDGE_CRON_SECRET')].filter(Boolean).includes(internalSecret));
+      if (!token && !internal) return new Response(JSON.stringify({error:'Unauthorized'}),{status:401,headers:{...corsHeaders,'Content-Type':'application/json'}});
+      if (!internal && token !== supabaseServiceKey) {
+        const {data: auth,error: authError} = await supabase.auth.getUser(token || '');
         const {data: admin} = auth.user ? await supabase.rpc('is_admin',{_user_id:auth.user.id}) : {data:false};
         if (authError || !admin || body.dryRun !== true) return new Response(JSON.stringify({error:'Unauthorized'}),{status:403,headers:{...corsHeaders,'Content-Type':'application/json'}});
       }
