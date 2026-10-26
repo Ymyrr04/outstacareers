@@ -1149,6 +1149,7 @@ export type Database = {
       }
       client_timesheet_email_settings: {
         Row: {
+          cc_emails: string[]
           client_id: string
           day_of_week: number
           enabled: boolean
@@ -1160,6 +1161,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cc_emails?: string[]
           client_id: string
           day_of_week?: number
           enabled?: boolean
@@ -1171,6 +1173,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cc_emails?: string[]
           client_id?: string
           day_of_week?: number
           enabled?: boolean
@@ -4356,6 +4359,7 @@ export type Database = {
       claim_client_timesheet_digests: {
         Args: never
         Returns: {
+          cc_emails: string[]
           client_id: string
           day_of_week: number
           enabled: boolean
