@@ -67,14 +67,17 @@ Deno.serve(async (req) => {
     let body: { contractorAssignmentId?: string } = {};
     try { body = await req.json(); } catch { /* no body */ }
 
-    // Fetch active contractors with email
+    // Fetch active contractors with email.
+    // When a specific assignment is requested, allow any status so an admin
+    // can restore a portal account for a resigned/terminated contractor.
     let query = admin
       .from("contractor_assignments")
-      .select("id, applicant:applicants_prescreen(email, full_name)")
-      .in("status", ["active", "rendering"]);
+      .select("id, applicant:applicants_prescreen(email, full_name)");
 
     if (body.contractorAssignmentId) {
       query = query.eq("id", body.contractorAssignmentId);
+    } else {
+      query = query.in("status", ["active", "rendering"]);
     }
 
     const { data: contractors, error: cErr } = await query;
@@ -123,8 +126,12 @@ Deno.serve(async (req) => {
           userId = newUser.user!.id;
           created += 1;
         } else {
-          // Reset existing auth user's password to the default so they can log in.
-          const { error: updErr } = await admin.auth.admin.updateUserById(userId, { password: DEFAULT_PASSWORD });
+          // Reset existing auth user's password to the default so they can log in,
+          // and lift any ban from a previous resigned/terminated deactivation.
+          const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+            password: DEFAULT_PASSWORD,
+            ban_duration: "none",
+          });
           if (updErr) throw updErr;
           linked += 1;
         }
