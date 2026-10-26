@@ -323,6 +323,13 @@
       "when": 1792602955337,
       "tag": "0045_add_client_profile_sections",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793021036925,
+      "tag": "0046_client_timesheet_email_schedules",
+      "breakpoints": true
     }
   ]
 }

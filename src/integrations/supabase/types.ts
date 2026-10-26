@@ -1118,6 +1118,79 @@ export type Database = {
         }
         Relationships: []
       }
+      client_timesheet_digest_deliveries: {
+        Row: {
+          client_id: string
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string
+        }
+        Insert: {
+          client_id: string
+          recipient_email: string
+          scheduled_at: string
+          sent_at?: string
+        }
+        Update: {
+          client_id?: string
+          recipient_email?: string
+          scheduled_at?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_timesheet_digest_deliveries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_timesheet_email_settings: {
+        Row: {
+          client_id: string
+          day_of_week: number
+          enabled: boolean
+          last_sent_at: string
+          locked_until: string | null
+          next_send_at: string | null
+          send_time: string
+          time_zone: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          day_of_week?: number
+          enabled?: boolean
+          last_sent_at?: string
+          locked_until?: string | null
+          next_send_at?: string | null
+          send_time?: string
+          time_zone?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          day_of_week?: number
+          enabled?: boolean
+          last_sent_at?: string
+          locked_until?: string | null
+          next_send_at?: string | null
+          send_time?: string
+          time_zone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_timesheet_email_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_timesheet_review_events: {
         Row: {
           client_id: string
@@ -4277,6 +4350,26 @@ export type Database = {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
       apply_timesheet_reminder_schedule: { Args: never; Returns: undefined }
       arm_knowledge_job: { Args: never; Returns: undefined }
+      claim_client_timesheet_digests: {
+        Args: never
+        Returns: {
+          client_id: string
+          day_of_week: number
+          enabled: boolean
+          last_sent_at: string
+          locked_until: string | null
+          next_send_at: string | null
+          send_time: string
+          time_zone: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "client_timesheet_email_settings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_knowledge_job_lock: {
         Args: { _seconds: number }
         Returns: {
@@ -4288,6 +4381,10 @@ export type Database = {
         Returns: undefined
       }
       disarm_knowledge_job: { Args: never; Returns: undefined }
+      finish_client_timesheet_digest: {
+        Args: { _client_id: string; _scheduled_at: string }
+        Returns: undefined
+      }
       get_calendar_hidden_user_ids: { Args: never; Returns: string[] }
       get_contractor_checkin_messages: {
         Args: { _contractor_assignment_id: string }
@@ -4328,6 +4425,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      next_client_timesheet_email: {
+        Args: { _after: string; _day: number; _time: string }
+        Returns: string
+      }
       search_knowledge: {
         Args: {
           allowed_tabs: string[]

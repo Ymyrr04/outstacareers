@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, KeyRound, User as UserIcon, Copy, Mail, Phone, ChevronDown, ChevronUp, X, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatDate } from "@/lib/dateFormat";
+import { ClientTimesheetEmailSettings } from './ClientTimesheetEmailSettings';
 
 interface PortalUser {
   id: string;
@@ -211,6 +212,7 @@ export function ClientPortalAccountsSection({ clientId }: { clientId: string }) 
 
   return (
     <div className="space-y-3">
+      <ClientTimesheetEmailSettings key={clientId} clientId={clientId} />
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
           Create login accounts so this client can review and approve timesheets at <code className="text-xs">/client-portal</code>. Each sub-account can be scoped to specific contractors.
