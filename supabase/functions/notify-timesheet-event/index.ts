@@ -1,10 +1,15 @@
 // Notify timesheet & leave events via email
 // Events: timesheet_submitted, timesheet_resubmitted, timesheet_approved, timesheet_flagged, leave_submitted
-import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import nodemailer from "npm:nodemailer@6.9.14";
 import { pdcEmail, type LegalEmailDocument } from "./pdcEmail.ts";
-import { corsHeaders } from 'npm:@supabase/supabase-js@2.89.0/cors';
 import { recipientRows, digestHtml, type DigestRow } from '../_shared/clientTimesheetDigest.ts';
+
+// This deployed runtime resolves all SDK imports to 2.39.3, which lacks /cors.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 
 type EventType =
