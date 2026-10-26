@@ -106,15 +106,28 @@ function bonusRow(base: MappedRow, bonus: number, fees: PlFees): MappedRow {
     raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_markup: BONUS_MARKUP, bonus: null },
   };
 }
-// Contractors on a special arrangement: their bonus is not added to the P&L.
+// Contractors on a special arrangement: their bonus is shown as a bonus row, but it is a
+// pass-through (even), so it adds nothing to expense, income or gross profit.
 // Oscar Robles (Adamson Ahdoot LLP).
 export const NO_BONUS_ASSIGNMENT_IDS = new Set(['733ec4d9-7f6f-4cdc-b3d7-7a3bb7c7648f']);
+function evenBonusRow(base: MappedRow, bonus: number): MappedRow {
+  return {
+    ...base,
+    hours: null, actual_hours: null, contractor_rate: null, client_rate: null,
+    contractor_cost: 0, client_billing: 0,
+    expense_after_1_percent: 0, income_after_3_percent: 0,
+    margin: 0, gross_after_deductions: 0,
+    client_deposit: null, contractor_deposit: null, bonus,
+    raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_pass_through: true, bonus: null },
+  };
+}
 function mapWithBonus(r: PlWeekRow, monday: string, fees: PlFees): MappedRow[] {
   const base = { ...mapRow(r, monday, fees), bonus: null };
   base.raw = { ...base.raw, bonus: null };
   const b = r.bonus != null ? Number(r.bonus) : 0;
-  if (NO_BONUS_ASSIGNMENT_IDS.has(r.assignment.id)) return [base];
-  return b > 0 ? [base, bonusRow(base, b, fees)] : [base];
+  if (!(b > 0)) return [base];
+  if (NO_BONUS_ASSIGNMENT_IDS.has(r.assignment.id)) return [base, evenBonusRow(base, b)];
+  return [base, bonusRow(base, b, fees)];
 }
 
 // New starters: the part of this week's pay held as security deposit is not sent to the
