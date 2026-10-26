@@ -3,13 +3,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import nodemailer from "npm:nodemailer@6.9.14";
 import { pdcEmail, type LegalEmailDocument } from "./pdcEmail.ts";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { recipientRows, digestHtml, type DigestRow } from '../_shared/clientTimesheetDigest.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 type EventType =
+  | "process_timesheet_digests"
   | "timesheet_submitted"
   | "timesheet_resubmitted"
   | "timesheet_approved"
@@ -20,6 +19,7 @@ type EventType =
 
 interface Payload {
   event: EventType;
+  dryRun?: boolean;
   timesheetId?: string;
   leaveId?: string;
   legalDocRequestId?: string;
@@ -273,6 +273,11 @@ async function handleTimesheetEvent(event: EventType, timesheetId: string, reaso
     );
 
     // Client notification
+    if (assign?.client_id) {
+      const { data: settings, error: settingsError } = await supabase.from('client_timesheet_email_settings').select('enabled').eq('client_id', assign.client_id).maybeSingle();
+      if (settingsError) throw new Error('Could not check client email schedule');
+      if (settings?.enabled) return;
+    }
     const clientEmails = assign?.client_id ? await getClientEmails(assign.client_id) : [];
     if (clientEmails.length) {
       await send(
@@ -503,12 +508,77 @@ async function handleLegalDocCompleted(
   if (!messageId) throw new Error('Could not send the legal documents');
 }
 
+async function processDigests(dryRun: boolean) {
+  const {data: settings, error} = dryRun
+    ? await supabase.from('client_timesheet_email_settings').select('*').eq('enabled',true).lte('next_send_at',new Date().toISOString())
+    : await supabase.rpc('claim_client_timesheet_digests');
+  if (error) throw error;
+  const results: {clientId:string; timesheets:number; recipients:number; error?:string}[] = [];
+  for (const setting of settings || []) {
+    const cutoff = setting.next_send_at;
+    if (!cutoff) continue;
+    try {
+      const [{data: assignments,error: assignmentsError},{data: accounts,error: accountsError},{data: company,error: companyError}] = await Promise.all([
+        supabase.from('contractor_assignments').select('id,applicant:applicants_prescreen(full_name)').eq('client_id',setting.client_id),
+        supabase.from('client_portal_users').select('id,primary_email,secondary_email,email').eq('client_id',setting.client_id),
+        supabase.from('clients').select('company_name').eq('id',setting.client_id).single(),
+      ]);
+      if (assignmentsError || accountsError || companyError) throw assignmentsError || accountsError || companyError;
+      const ids = (assignments || []).map(a=>a.id);
+      const names = new Map((assignments || []).map(a=>[a.id,a.applicant?.full_name || 'Contractor']));
+      const rows: DigestRow[] = [];
+      if (ids.length) {
+        for (let offset=0;;offset+=1000) {
+          const {data,error: rowsError} = await supabase.from('contractor_timesheets').select('id,contractor_assignment_id,week_ending_date,total_hours,notes,daily_hours').in('contractor_assignment_id',ids).gt('submitted_at',setting.last_sent_at).lte('submitted_at',cutoff).order('id').range(offset,offset+999);
+          if (rowsError) throw rowsError;
+          rows.push(...(data || []) as DigestRow[]);
+          if ((data || []).length<1000) break;
+        }
+      }
+      const accountIds = (accounts || []).map(a=>a.id);
+      const {data: access,error: accessError} = accountIds.length ? await supabase.from('client_portal_user_contractors').select('portal_user_id,contractor_assignment_id').in('portal_user_id',accountIds) : {data:[],error:null};
+      if (accessError) throw accessError;
+      const recipients = recipientRows(accounts || [],access || [],rows);
+      const {data: delivered,error: deliveredError} = await supabase.from('client_timesheet_digest_deliveries').select('recipient_email').eq('client_id',setting.client_id).eq('scheduled_at',cutoff);
+      if (deliveredError) throw deliveredError;
+      const sent = new Set((delivered || []).map(d=>d.recipient_email));
+      for (const [email,visible] of recipients) {
+        if (!visible.length || sent.has(email) || dryRun) continue;
+        const messageId = await send(email,['mark@outsta.io'],`Timesheets to review — ${company?.company_name || 'Your contractors'}`,digestHtml(company?.company_name || 'Your company',visible,names));
+        if (!messageId) throw new Error('Could not send client digest');
+        const {error: logError} = await supabase.from('client_timesheet_digest_deliveries').insert({client_id:setting.client_id,scheduled_at:cutoff,recipient_email:email});
+        if (logError) throw logError;
+      }
+      if (!dryRun && rows.length && ![...recipients.values()].some(r=>r.length)) throw new Error('No client recipient email configured');
+      if (!dryRun) {
+        const {error: finishError} = await supabase.rpc('finish_client_timesheet_digest',{_client_id:setting.client_id,_scheduled_at:cutoff});
+        if (finishError) throw finishError;
+      }
+      results.push({clientId:setting.client_id,timesheets:rows.length,recipients:[...recipients.values()].filter(r=>r.length).length});
+    } catch (e) {
+      console.error('client digest failed',setting.client_id,e);
+      results.push({clientId:setting.client_id,timesheets:0,recipients:0,error:e instanceof Error ? e.message : 'Digest failed'});
+    }
+  }
+  return {success:results.every(r=>!r.error),dryRun,results};
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const body: Payload = await req.json();
     if (!body?.event) throw new Error("event is required");
 
+    if (body.event === 'process_timesheet_digests') {
+      const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i,'');
+      if (!token) return new Response(JSON.stringify({error:'Unauthorized'}),{status:401,headers:{...corsHeaders,'Content-Type':'application/json'}});
+      if (token !== supabaseServiceKey) {
+        const {data: auth,error: authError} = await supabase.auth.getUser(token);
+        const {data: admin} = auth.user ? await supabase.rpc('is_admin',{_user_id:auth.user.id}) : {data:false};
+        if (authError || !admin || body.dryRun !== true) return new Response(JSON.stringify({error:'Unauthorized'}),{status:403,headers:{...corsHeaders,'Content-Type':'application/json'}});
+      }
+      return new Response(JSON.stringify(await processDigests(body.dryRun === true)),{headers:{...corsHeaders,'Content-Type':'application/json'}});
+    }
     if (body.event === "leave_submitted") {
       if (!body.leaveId) throw new Error("leaveId is required");
       await handleLeaveSubmitted(body.leaveId);
