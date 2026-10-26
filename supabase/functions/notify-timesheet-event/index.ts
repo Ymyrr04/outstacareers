@@ -586,6 +586,32 @@ Deno.serve(async (req) => {
       }
       return new Response(JSON.stringify(await processDigests(body.dryRun === true)),{headers:{...corsHeaders,'Content-Type':'application/json'}});
     }
+    if ((body as any).event === 'send_timesheet_digest_sample') {
+      // Sends a preview of a client's combined email ONLY to mark@outsta.io.
+      const internalSecret = req.headers.get('x-internal-secret');
+      const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i,'');
+      let ok = Boolean(internalSecret && [Deno.env.get('KNOWLEDGE_JOB_SECRET'),Deno.env.get('KNOWLEDGE_CRON_SECRET')].filter(Boolean).includes(internalSecret));
+      if (!ok && token) {
+        const {data: auth} = await supabase.auth.getUser(token);
+        const {data: admin} = auth?.user ? await supabase.rpc('is_admin',{_user_id:auth.user.id}) : {data:false};
+        ok = Boolean(admin);
+      }
+      if (!ok) return new Response(JSON.stringify({error:'Unauthorized'}),{status:403,headers:{...corsHeaders,'Content-Type':'application/json'}});
+      const clientId = (body as any).clientId as string;
+      if (!clientId) throw new Error('clientId is required');
+      const [{data: assignments},{data: company}] = await Promise.all([
+        supabase.from('contractor_assignments').select('id,applicant:applicants_prescreen(full_name)').eq('client_id',clientId),
+        supabase.from('clients').select('company_name').eq('id',clientId).single(),
+      ]);
+      const ids = (assignments || []).map((a:any)=>a.id);
+      const names = new Map((assignments || []).map((a:any)=>[a.id,a.applicant?.full_name || 'Contractor']));
+      const {data: latest} = await supabase.from('contractor_timesheets').select('week_ending_date').in('contractor_assignment_id',ids).not('submitted_at','is',null).order('week_ending_date',{ascending:false}).limit(1);
+      const week = latest?.[0]?.week_ending_date;
+      const {data: rows} = week ? await supabase.from('contractor_timesheets').select('id,contractor_assignment_id,week_ending_date,total_hours,notes,daily_hours').in('contractor_assignment_id',ids).eq('week_ending_date',week).not('submitted_at','is',null) : {data:[]};
+      if (!rows?.length) throw new Error('No submitted timesheets found');
+      const messageId = await send('mark@outsta.io',[],`[SAMPLE] Timesheets to review — ${company?.company_name || 'Your contractors'}`,digestHtml(company?.company_name || 'Your company',rows as DigestRow[],names as any));
+      return new Response(JSON.stringify({success:Boolean(messageId),week,timesheets:rows.length}),{headers:{...corsHeaders,'Content-Type':'application/json'}});
+    }
     if (body.event === "leave_submitted") {
       if (!body.leaveId) throw new Error("leaveId is required");
       await handleLeaveSubmitted(body.leaveId);
