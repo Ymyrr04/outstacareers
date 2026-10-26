@@ -707,6 +707,24 @@ export const PLDashboard = () => {
     return data;
   };
 
+  const handleRestoreAccess = async (c: any) => {
+    if (!c.applicant?.email) {
+      toast({ title: 'No email on file', description: 'This contractor has no email address to send login details to.', variant: 'destructive' });
+      return;
+    }
+    if (!confirm(`Restore portal access for ${c.applicant.full_name}?\n\nTheir account will be re-enabled (or recreated if it was removed) and they can log in with the default password. Their status stays "${c.status}".`)) return;
+    setRestoringId(c.id);
+    try {
+      await callProvision({ contractorAssignmentId: c.id });
+      toast({ title: 'Portal access restored', description: `${c.applicant.full_name} can now log in with the default password.` });
+      await fetchData();
+    } catch (e: any) {
+      toast({ title: 'Could not restore access', description: e?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
   const handleProvision = async () => {
     // Strict filter: only contractors who have a portal account AND have not yet activated
     // (still on temporary password / must_change_password = true), and are still active/rendering.
