@@ -2311,6 +2311,7 @@ export type Database = {
         Row: {
           contractor_assignment_id: string
           created_at: string
+          disabled_at: string | null
           email: string
           id: string
           must_change_password: boolean
@@ -2320,6 +2321,7 @@ export type Database = {
         Insert: {
           contractor_assignment_id: string
           created_at?: string
+          disabled_at?: string | null
           email: string
           id?: string
           must_change_password?: boolean
@@ -2329,6 +2331,7 @@ export type Database = {
         Update: {
           contractor_assignment_id?: string
           created_at?: string
+          disabled_at?: string | null
           email?: string
           id?: string
           must_change_password?: boolean

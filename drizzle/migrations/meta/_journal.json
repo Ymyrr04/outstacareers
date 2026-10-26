@@ -330,6 +330,13 @@
       "when": 1793021036925,
       "tag": "0046_client_timesheet_email_schedules",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793024358101,
+      "tag": "0047_disable_portal_on_resign_instead_of_delete",
+      "breakpoints": true
     }
   ]
 }

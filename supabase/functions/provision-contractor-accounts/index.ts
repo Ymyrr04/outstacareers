@@ -67,14 +67,17 @@ Deno.serve(async (req) => {
     let body: { contractorAssignmentId?: string } = {};
     try { body = await req.json(); } catch { /* no body */ }
 
-    // Fetch active contractors with email
+    // Fetch active contractors with email.
+    // When a specific assignment is requested, allow any status so an admin
+    // can restore a portal account for a resigned/terminated contractor.
     let query = admin
       .from("contractor_assignments")
-      .select("id, applicant:applicants_prescreen(email, full_name)")
-      .in("status", ["active", "rendering"]);
+      .select("id, applicant:applicants_prescreen(email, full_name)");
 
     if (body.contractorAssignmentId) {
       query = query.eq("id", body.contractorAssignmentId);
+    } else {
+      query = query.in("status", ["active", "rendering"]);
     }
 
     const { data: contractors, error: cErr } = await query;
