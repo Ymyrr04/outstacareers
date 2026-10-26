@@ -547,9 +547,11 @@ async function processDigests(dryRun: boolean) {
       const {data: delivered,error: deliveredError} = await supabase.from('client_timesheet_digest_deliveries').select('recipient_email').eq('client_id',setting.client_id).eq('scheduled_at',cutoff);
       if (deliveredError) throw deliveredError;
       const sent = new Set((delivered || []).map(d=>d.recipient_email));
+      const settingCc = Array.isArray(setting.cc_emails) ? setting.cc_emails.filter((e: unknown) => typeof e === 'string' && e.includes('@')) : [];
       for (const [email,visible] of recipients) {
         if (!visible.length || sent.has(email) || dryRun) continue;
-        const messageId = await send(email,['mark@outsta.io'],`Timesheets to review — ${company?.company_name || 'Your contractors'}`,digestHtml(company?.company_name || 'Your company',visible,names));
+        const cc = [...new Set(['mark@outsta.io', ...settingCc].map((e: string) => e.toLowerCase()))].filter((e: string) => e !== email.toLowerCase());
+        const messageId = await send(email,cc,`Timesheets to review — ${company?.company_name || 'Your contractors'}`,digestHtml(company?.company_name || 'Your company',visible,names));
         if (!messageId) throw new Error('Could not send client digest');
         const {error: logError} = await supabase.from('client_timesheet_digest_deliveries').insert({client_id:setting.client_id,scheduled_at:cutoff,recipient_email:email});
         if (logError) throw logError;
@@ -619,10 +621,11 @@ Deno.serve(async (req) => {
       if (!ok) return new Response(JSON.stringify({error:'Unauthorized'}),{status:403,headers:{...corsHeaders,'Content-Type':'application/json'}});
       const clientId = (body as any).clientId as string;
       if (!clientId) throw new Error('clientId is required');
-      const [{data: assignments},{data: company},{data: accounts}] = await Promise.all([
+      const [{data: assignments},{data: company},{data: accounts},{data: digestSettings}] = await Promise.all([
         supabase.from('contractor_assignments').select('id,applicant:applicants_prescreen(full_name)').eq('client_id',clientId),
         supabase.from('clients').select('company_name').eq('id',clientId).single(),
         supabase.from('client_portal_users').select('id,primary_email,secondary_email,email').eq('client_id',clientId),
+        supabase.from('client_timesheet_email_settings').select('cc_emails').eq('client_id',clientId).maybeSingle(),
       ]);
       const ids = (assignments || []).map((a:any)=>a.id);
       const names = new Map((assignments || []).map((a:any)=>[a.id,a.applicant?.full_name || 'Contractor']));
@@ -633,10 +636,12 @@ Deno.serve(async (req) => {
       const accountIds = (accounts || []).map((a:any)=>a.id);
       const {data: access} = accountIds.length ? await supabase.from('client_portal_user_contractors').select('portal_user_id,contractor_assignment_id').in('portal_user_id',accountIds) : {data:[]};
       const recipients = recipientRows(accounts || [],access || [],rows as DigestRow[]);
+      const settingCc = Array.isArray((digestSettings as any)?.cc_emails) ? (digestSettings as any).cc_emails.filter((e: unknown) => typeof e === 'string' && e.includes('@')) : [];
       const sentTo: string[] = [];
       for (const [email,visible] of recipients) {
         if (!visible.length) continue;
-        const messageId = await send(email,['mark@outsta.io'],`Timesheets to review — ${company?.company_name || 'Your contractors'}`,digestHtml(company?.company_name || 'Your company',visible,names as any));
+        const cc = [...new Set(['mark@outsta.io', ...settingCc].map((e: string) => e.toLowerCase()))].filter((e: string) => e !== email.toLowerCase());
+        const messageId = await send(email,cc,`Timesheets to review — ${company?.company_name || 'Your contractors'}`,digestHtml(company?.company_name || 'Your company',visible,names as any));
         if (messageId) sentTo.push(email);
       }
       return new Response(JSON.stringify({success:sentTo.length>0,week,timesheets:rows.length,recipients:sentTo.length}),{headers:{...corsHeaders,'Content-Type':'application/json'}});
