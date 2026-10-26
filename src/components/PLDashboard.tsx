@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock, Trash2, UserX, RotateCcw } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -386,6 +386,8 @@ export const PLDashboard = () => {
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'clientDeposit' | 'contractorDeposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
+  const [endedContractors, setEndedContractors] = useState<any[]>([]);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
   const [editedMap, setEditedMap] = useState<Record<string, string>>({});
   const [seenEdits, setSeenEdits] = useState<Record<string, string>>(() => {
@@ -403,6 +405,7 @@ export const PLDashboard = () => {
   // Section reordering (persisted per browser)
   const SECTION_DEFS = [
     { id: 'contractors', label: 'Contractors' },
+    { id: 'suspendedAccounts', label: 'Suspended Accounts' },
     { id: 'leave', label: 'Leave Applications' },
     { id: 'internalContractors', label: 'Internal Team — OutSta' },
     { id: 'timesheets', label: 'Timesheet Submissions' },
@@ -483,6 +486,26 @@ export const PLDashboard = () => {
     ]);
 
     setClientPortalClientIds(new Set(((clientPortals as any[]) || []).map((c) => c.client_id).filter(Boolean)));
+
+    // Ended contractors (resigned/terminated) and their portal account state
+    const { data: ended } = await supabase
+      .from('contractor_assignments')
+      .select(`
+        id, job_title, status, status_changed_at,
+        applicant:applicants_prescreen(full_name, email),
+        client:clients(company_name)
+      `)
+      .in('status', ['resigned', 'terminated'])
+      .order('status_changed_at', { ascending: false });
+    const endedIds = ((ended as any[]) || []).map((a) => a.id);
+    const { data: endedPortals } = endedIds.length
+      ? await supabase.from('contractor_portal_users').select('contractor_assignment_id, disabled_at, must_change_password').in('contractor_assignment_id', endedIds)
+      : { data: [] as any[] };
+    const endedPortalMap = new Map<string, any>(((endedPortals as any[]) || []).map((p) => [p.contractor_assignment_id, p]));
+    setEndedContractors(((ended as any[]) || []).map((a) => ({
+      ...a,
+      portal: endedPortalMap.get(a.id) || null,
+    })));
 
     const portalMap = new Map<string, boolean>(
       (portalUsers || []).map((p: any) => [p.contractor_assignment_id, p.must_change_password])
@@ -682,6 +705,24 @@ export const PLDashboard = () => {
       throw new Error(detail);
     }
     return data;
+  };
+
+  const handleRestoreAccess = async (c: any) => {
+    if (!c.applicant?.email) {
+      toast({ title: 'No email on file', description: 'This contractor has no email address to send login details to.', variant: 'destructive' });
+      return;
+    }
+    if (!confirm(`Restore portal access for ${c.applicant.full_name}?\n\nTheir account will be re-enabled (or recreated if it was removed) and they can log in with the default password. Their status stays "${c.status}".`)) return;
+    setRestoringId(c.id);
+    try {
+      await callProvision({ contractorAssignmentId: c.id });
+      toast({ title: 'Portal access restored', description: `${c.applicant.full_name} can now log in with the default password.` });
+      await fetchData();
+    } catch (e: any) {
+      toast({ title: 'Could not restore access', description: e?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setRestoringId(null);
+    }
   };
 
   const handleProvision = async () => {
@@ -1645,6 +1686,80 @@ export const PLDashboard = () => {
                     </ColumnOrder>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </CollapsibleSection>
+      )}
+
+      {activeSubtab === 'contractors' && (
+      <CollapsibleSection
+        storageKey="pl_section_suspended_accounts"
+        title="Suspended Accounts"
+        badge={<Badge variant="secondary" className="text-[10px] ml-1">{endedContractors.length}</Badge>}
+        collapsedSummary={`${endedContractors.length} resigned or terminated contractors`}
+        style={{ order: sectionOrder.indexOf('suspendedAccounts') }}
+      >
+        <div className="p-0">
+          {loading ? (
+            <div className="p-12 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+          ) : endedContractors.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground">No resigned or terminated contractors.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Contractor</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ended</TableHead>
+                  <TableHead>Portal Account</TableHead>
+                  <TableHead className="w-32"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {endedContractors.map((c, idx) => {
+                  const portalState = !c.portal ? 'none' : c.portal.disabled_at ? 'suspended' : 'active';
+                  return (
+                    <TableRow key={c.id} className={idx % 2 === 1 ? 'bg-muted/20' : ''}>
+                      <TableCell>
+                        <div className="font-medium">{c.applicant?.full_name || '—'}</div>
+                        <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
+                      </TableCell>
+                      <TableCell>{c.client?.company_name || '—'}</TableCell>
+                      <TableCell className="text-sm">{c.job_title || '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={c.status === 'terminated' ? 'border-red-300 text-red-700' : 'border-amber-300 text-amber-700'}>
+                          {c.status === 'terminated' ? 'Terminated' : 'Resigned'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {c.status_changed_at ? new Date(c.status_changed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {portalState === 'suspended' && <Badge variant="outline" className="border-red-300 text-red-700"><UserX className="w-3 h-3 mr-1" />Suspended</Badge>}
+                        {portalState === 'active' && <Badge variant="outline" className="border-emerald-300 text-emerald-700"><Check className="w-3 h-3 mr-1" />Active</Badge>}
+                        {portalState === 'none' && <Badge variant="outline" className="text-muted-foreground">No account</Badge>}
+                      </TableCell>
+                      <TableCell>
+                        {portalState !== 'active' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={restoringId === c.id || !c.applicant?.email}
+                            onClick={() => handleRestoreAccess(c)}
+                            title="Re-enable or recreate the portal account"
+                          >
+                            {restoringId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><RotateCcw className="w-3 h-3 mr-1" />Restore</>}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
