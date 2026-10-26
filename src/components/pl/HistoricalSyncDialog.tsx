@@ -106,10 +106,14 @@ function bonusRow(base: MappedRow, bonus: number, fees: PlFees): MappedRow {
     raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_markup: BONUS_MARKUP, bonus: null },
   };
 }
+// Contractors on a special arrangement: their bonus is not added to the P&L.
+// Oscar Robles (Adamson Ahdoot LLP).
+export const NO_BONUS_ASSIGNMENT_IDS = new Set(['733ec4d9-7f6f-4cdc-b3d7-7a3bb7c7648f']);
 function mapWithBonus(r: PlWeekRow, monday: string, fees: PlFees): MappedRow[] {
   const base = { ...mapRow(r, monday, fees), bonus: null };
   base.raw = { ...base.raw, bonus: null };
   const b = r.bonus != null ? Number(r.bonus) : 0;
+  if (NO_BONUS_ASSIGNMENT_IDS.has(r.assignment.id)) return [base];
   return b > 0 ? [base, bonusRow(base, b, fees)] : [base];
 }
 
