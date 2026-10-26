@@ -126,8 +126,12 @@ Deno.serve(async (req) => {
           userId = newUser.user!.id;
           created += 1;
         } else {
-          // Reset existing auth user's password to the default so they can log in.
-          const { error: updErr } = await admin.auth.admin.updateUserById(userId, { password: DEFAULT_PASSWORD });
+          // Reset existing auth user's password to the default so they can log in,
+          // and lift any ban from a previous resigned/terminated deactivation.
+          const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+            password: DEFAULT_PASSWORD,
+            ban_duration: "none",
+          });
           if (updErr) throw updErr;
           linked += 1;
         }
