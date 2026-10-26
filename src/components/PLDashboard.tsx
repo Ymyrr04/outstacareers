@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock, Trash2, UserX, RotateCcw } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -386,6 +386,8 @@ export const PLDashboard = () => {
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'clientDeposit' | 'contractorDeposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
+  const [endedContractors, setEndedContractors] = useState<any[]>([]);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
   const [editedMap, setEditedMap] = useState<Record<string, string>>({});
   const [seenEdits, setSeenEdits] = useState<Record<string, string>>(() => {
@@ -403,6 +405,7 @@ export const PLDashboard = () => {
   // Section reordering (persisted per browser)
   const SECTION_DEFS = [
     { id: 'contractors', label: 'Contractors' },
+    { id: 'suspendedAccounts', label: 'Suspended Accounts' },
     { id: 'leave', label: 'Leave Applications' },
     { id: 'internalContractors', label: 'Internal Team — OutSta' },
     { id: 'timesheets', label: 'Timesheet Submissions' },
