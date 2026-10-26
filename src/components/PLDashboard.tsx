@@ -487,6 +487,26 @@ export const PLDashboard = () => {
 
     setClientPortalClientIds(new Set(((clientPortals as any[]) || []).map((c) => c.client_id).filter(Boolean)));
 
+    // Ended contractors (resigned/terminated) and their portal account state
+    const { data: ended } = await supabase
+      .from('contractor_assignments')
+      .select(`
+        id, job_title, status, status_changed_at,
+        applicant:applicants_prescreen(full_name, email),
+        client:clients(company_name)
+      `)
+      .in('status', ['resigned', 'terminated'])
+      .order('status_changed_at', { ascending: false });
+    const endedIds = ((ended as any[]) || []).map((a) => a.id);
+    const { data: endedPortals } = endedIds.length
+      ? await supabase.from('contractor_portal_users').select('contractor_assignment_id, disabled_at, must_change_password').in('contractor_assignment_id', endedIds)
+      : { data: [] as any[] };
+    const endedPortalMap = new Map<string, any>(((endedPortals as any[]) || []).map((p) => [p.contractor_assignment_id, p]));
+    setEndedContractors(((ended as any[]) || []).map((a) => ({
+      ...a,
+      portal: endedPortalMap.get(a.id) || null,
+    })));
+
     const portalMap = new Map<string, boolean>(
       (portalUsers || []).map((p: any) => [p.contractor_assignment_id, p.must_change_password])
     );
