@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Add per-client weekly timesheet email scheduling in Portal Options, retaining immediate default; verify schedule saving, grouped/scoped delivery and unchanged contractor confirmations.
+- [x] Add per-client weekly timesheet email scheduling in Portal Options; real save/reload verified and restored, live no-send digest grouped four real timesheets for one recipient, unauthenticated requests rejected, four tests and build clean; scheduled delivery runs every 30 minutes, actual mailbox receipt untested.
 - [x] Delay rendering portal deactivation by one daily run (24 hours), preserving end dates; deployed and three cutoff tests passed. Michelle Polenio already has no portal account, so her final submission could not be verified.
 - [x] Add Rate and Time zone above Client Overview for new and saved profiles; verified save/reload with writes intercepted and four tests; fixed the client panel accessibility warning.
 - [x] Make Client Profile section-based with five default headings and Add section; verified preservation, save, reload and cancellation with writes intercepted; three tests passed.
