@@ -1693,6 +1693,80 @@ export const PLDashboard = () => {
       </CollapsibleSection>
       )}
 
+      {activeSubtab === 'contractors' && (
+      <CollapsibleSection
+        storageKey="pl_section_suspended_accounts"
+        title="Suspended Accounts"
+        badge={<Badge variant="secondary" className="text-[10px] ml-1">{endedContractors.length}</Badge>}
+        collapsedSummary={`${endedContractors.length} resigned or terminated contractors`}
+        style={{ order: sectionOrder.indexOf('suspendedAccounts') }}
+      >
+        <div className="p-0">
+          {loading ? (
+            <div className="p-12 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+          ) : endedContractors.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground">No resigned or terminated contractors.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Contractor</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ended</TableHead>
+                  <TableHead>Portal Account</TableHead>
+                  <TableHead className="w-32"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {endedContractors.map((c, idx) => {
+                  const portalState = !c.portal ? 'none' : c.portal.disabled_at ? 'suspended' : 'active';
+                  return (
+                    <TableRow key={c.id} className={idx % 2 === 1 ? 'bg-muted/20' : ''}>
+                      <TableCell>
+                        <div className="font-medium">{c.applicant?.full_name || '—'}</div>
+                        <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
+                      </TableCell>
+                      <TableCell>{c.client?.company_name || '—'}</TableCell>
+                      <TableCell className="text-sm">{c.job_title || '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={c.status === 'terminated' ? 'border-red-300 text-red-700' : 'border-amber-300 text-amber-700'}>
+                          {c.status === 'terminated' ? 'Terminated' : 'Resigned'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {c.status_changed_at ? new Date(c.status_changed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {portalState === 'suspended' && <Badge variant="outline" className="border-red-300 text-red-700"><UserX className="w-3 h-3 mr-1" />Suspended</Badge>}
+                        {portalState === 'active' && <Badge variant="outline" className="border-emerald-300 text-emerald-700"><Check className="w-3 h-3 mr-1" />Active</Badge>}
+                        {portalState === 'none' && <Badge variant="outline" className="text-muted-foreground">No account</Badge>}
+                      </TableCell>
+                      <TableCell>
+                        {portalState !== 'active' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={restoringId === c.id || !c.applicant?.email}
+                            onClick={() => handleRestoreAccess(c)}
+                            title="Re-enable or recreate the portal account"
+                          >
+                            {restoringId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><RotateCcw className="w-3 h-3 mr-1" />Restore</>}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </CollapsibleSection>
+      )}
+
       {activeSubtab === 'contractors' && filteredInternalContractors.length > 0 && (
 
         <CollapsibleSection
