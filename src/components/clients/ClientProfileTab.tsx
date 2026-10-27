@@ -4,7 +4,7 @@ import { NotesEditor } from '@/components/NotesEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { addClientProfileSection, clientProfileSectionsHtml, loadClientProfileSections } from '@/lib/clientProfileSections';
+import { addClientProfileSection, clientProfileSectionsHtml, isRetiredProfileSectionTitle, loadClientProfileSections } from '@/lib/clientProfileSections';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Edit2, Loader2, Plus, Save } from 'lucide-react';
