@@ -7,6 +7,7 @@ export interface ClientProfileSection {
 const defaultTitles = [
   'CLIENT OVERVIEW',
   'CLIENT PERSONALITY & WORKING STYLE',
+  'OTHERS',
 ];
 
 const normalizeTitle = (title: string) =>
@@ -29,7 +30,13 @@ function withTopFields(sections: ClientProfileSection[]): ClientProfileSection[]
     sections.find(section => section.title.trim().toLowerCase() === title.toLowerCase()) ||
     { id: `profile-field-${index}`, title, content: '' });
   const fieldIds = new Set(fields.map(field => field.id));
-  return [...fields, ...sections.filter(section => !fieldIds.has(section.id))];
+  const middle = sections.filter(section => !fieldIds.has(section.id));
+  // Every profile ends with an OTHERS section; append it when a saved profile
+  // predates the standard section.
+  const tail = middle.some(section => section.title.trim().toLowerCase() === 'others')
+    ? []
+    : [{ id: 'profile-field-others', title: 'OTHERS', content: '' }];
+  return [...fields, ...middle, ...tail];
 }
 
 export function loadClientProfileSections(value: unknown, legacyProfile: string | null): ClientProfileSection[] {
