@@ -4,7 +4,7 @@ import { NotesEditor } from '@/components/NotesEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { addClientProfileSection, clientProfileSectionsHtml, loadClientProfileSections } from '@/lib/clientProfileSections';
+import { addClientProfileSection, clientProfileSectionsHtml, isRetiredProfileSectionTitle, loadClientProfileSections } from '@/lib/clientProfileSections';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Edit2, Loader2, Plus, Save } from 'lucide-react';
@@ -86,7 +86,7 @@ export function ClientProfileTab({ clientId, profile, sections, onUpdate }: Clie
           <Label htmlFor="new-profile-section">Section name</Label>
           <div className="flex flex-wrap gap-2">
             <Input id="new-profile-section" className="flex-1 min-w-0" value={sectionTitle} onChange={event => setSectionTitle(event.target.value)} disabled={saving} placeholder="New section name" />
-            <Button size="sm" variant="outline" disabled={saving || !sectionTitle.trim()} onClick={() => { setDraft(current => addClientProfileSection(current, sectionTitle, crypto.randomUUID())); setSectionTitle(''); }}>
+            <Button size="sm" variant="outline" disabled={saving || !sectionTitle.trim() || isRetiredProfileSectionTitle(sectionTitle)} onClick={() => { setDraft(current => addClientProfileSection(current, sectionTitle, crypto.randomUUID())); setSectionTitle(''); }}>
               <Plus className="w-4 h-4 mr-1" />Add section
             </Button>
           </div>

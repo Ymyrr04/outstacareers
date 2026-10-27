@@ -7,10 +7,22 @@ export interface ClientProfileSection {
 const defaultTitles = [
   'CLIENT OVERVIEW',
   'CLIENT PERSONALITY & WORKING STYLE',
-  'MATCHING CRITERIA',
-  'Character — Values & Work Ethic',
-  'Chemistry — Working Style Compatibility',
 ];
+
+const normalizeTitle = (title: string) =>
+  title.trim().toLowerCase().replace(/[\u2013\u2014]/g, '-').replace(/\s+/g, ' ');
+
+// Retired profile sections: hidden from every profile, even when an older
+// client record still stores them.
+const retiredTitles = new Set([
+  'matching criteria',
+  'character - values & work ethic',
+  'chemistry - working style compatibility',
+]);
+
+export function isRetiredProfileSectionTitle(title: string): boolean {
+  return retiredTitles.has(normalizeTitle(title));
+}
 
 function withTopFields(sections: ClientProfileSection[]): ClientProfileSection[] {
   const fields = ['Rate', 'Time zone'].map((title, index) =>
@@ -24,7 +36,8 @@ export function loadClientProfileSections(value: unknown, legacyProfile: string 
   if (Array.isArray(value)) {
     const sections = value.filter((item): item is ClientProfileSection =>
       !!item && typeof item === 'object' && typeof item.id === 'string' &&
-      typeof item.title === 'string' && typeof item.content === 'string');
+      typeof item.title === 'string' && typeof item.content === 'string')
+      .filter(section => !isRetiredProfileSectionTitle(section.title));
     if (sections.length) return withTopFields(sections.map(section => ({ ...section })));
   }
   return withTopFields(defaultTitles.map((title, index) => ({
@@ -33,7 +46,7 @@ export function loadClientProfileSections(value: unknown, legacyProfile: string 
 }
 
 export function addClientProfileSection(sections: ClientProfileSection[], title: string, id: string): ClientProfileSection[] {
-  return title.trim() ? [...sections, { id, title: title.trim(), content: '' }] : sections;
+  return title.trim() && !isRetiredProfileSectionTitle(title) ? [...sections, { id, title: title.trim(), content: '' }] : sections;
 }
 
 export function clientProfileSectionsHtml(sections: ClientProfileSection[]): string {
