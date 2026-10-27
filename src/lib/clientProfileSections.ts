@@ -7,6 +7,7 @@ export interface ClientProfileSection {
 const defaultTitles = [
   'CLIENT OVERVIEW',
   'CLIENT PERSONALITY & WORKING STYLE',
+  'OTHERS',
 ];
 
 const normalizeTitle = (title: string) =>
