@@ -65,3 +65,9 @@ button.announcement-attachment:hover:not([disabled]) {
   border-color: hsl(var(--brand-dark));
   color: hsl(0 0% 100%);
 }
+
+/* Attachment name rows in the editor, kept in the same teal highlight. */
+.announcement-attachment-name {
+  color: hsl(var(--brand-text));
+  font-weight: 600;
+}
