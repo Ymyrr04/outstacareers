@@ -5,13 +5,14 @@ interface FormattedNotesProps {
   content: string;
   className?: string;
   preserveFormatting?: boolean;
+  announcementImages?: Record<string, string>;
 }
 
 /**
  * Renders notes with HTML formatting from WYSIWYG editor.
  * Falls back to markdown-style parsing for legacy content.
  */
-export function FormattedNotes({ content, className = '', preserveFormatting = false }: FormattedNotesProps) {
+export function FormattedNotes({ content, className = '', preserveFormatting = false, announcementImages }: FormattedNotesProps) {
   const formattedHtml = useMemo(() => {
     if (!content) return '';
     
@@ -43,12 +44,25 @@ export function FormattedNotes({ content, className = '', preserveFormatting = f
         .replace(/\n/g, '<br />');
     }
     
+    if (announcementImages) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('img').forEach(img => {
+        const id = img.getAttribute('data-file-id') || '';
+        const url = announcementImages[id];
+        if (!url) { img.remove(); return; }
+        img.setAttribute('src', url);
+        img.setAttribute('width', String(Math.min(1200, Math.max(50, Number(img.getAttribute('width')) || 500))));
+        img.removeAttribute('height');
+        img.setAttribute('class', 'max-w-full h-auto');
+      });
+      html = doc.body.innerHTML;
+    }
     // Sanitize the HTML
     return DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: ['p', 'strong', 'em', 'u', 'a', 'br', 'ul', 'ol', 'li', ...(preserveFormatting ? ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'hr', 's'] : [])],
-      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', ...(preserveFormatting ? ['start'] : [])],
+      ALLOWED_TAGS: ['p', 'strong', 'em', 'u', 'a', 'br', 'ul', 'ol', 'li', ...(announcementImages ? ['img'] : []), ...(preserveFormatting ? ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'hr', 's'] : [])],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', ...(announcementImages ? ['src', 'alt', 'width', 'data-file-id'] : []), ...(preserveFormatting ? ['start'] : [])],
     });
-  }, [content, preserveFormatting]);
+  }, [content, preserveFormatting, announcementImages]);
 
   if (!content) {
     return null;
