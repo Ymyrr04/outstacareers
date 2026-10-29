@@ -35,7 +35,7 @@ export function AnnouncementDownload({ file }: { file: AnnouncementFile }) {
   };
 
   return <div className="space-y-1">
-    <Button variant="outline" size="sm" className="max-w-full" disabled={!blob && !error}
+    <Button variant="outline" size="sm" className="announcement-attachment max-w-full" disabled={!blob && !error}
       onClick={() => { if (error && !blob) setAttempt(a => a + 1); else void download(); }}>
       {error && !blob ? <RefreshCw className="mr-2 h-4 w-4 shrink-0" /> : blob ? <Download className="mr-2 h-4 w-4 shrink-0" /> : <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />}
       <span className="truncate">{file.name}</span>
