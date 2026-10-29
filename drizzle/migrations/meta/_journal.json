@@ -358,6 +358,13 @@
       "when": 1793281447432,
       "tag": "0050_private_portal_announcement_samples",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793281504742,
+      "tag": "0051_qualify_private_announcement_storage_path",
+      "breakpoints": true
     }
   ]
 }
