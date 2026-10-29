@@ -124,3 +124,31 @@ export function buildJobPay(
   const rate = usesPhpConversion(region) ? phpRateText(pay, phpPerUsd) : formatUsdRate(pay);
   return { ok: true, value: { ...base, rate_min: min, rate_max: max, rate } };
 }
+
+/** Parses old free-text USD hourly rates like "$5/hour"; returns null for peso or non-hourly text. */
+export function parseLegacyUsdHourly(rate: string): number | null {
+  if (rate.trim().startsWith('₱')) return null;
+  const match = rate.match(/\$?([\d,]+(?:\.\d{1,2})?)\s*\/?\s*(hour|hr)?/i);
+  if (!match) return null;
+  const period = match[2]?.toLowerCase() || '';
+  if (period && period !== 'hour' && period !== 'hr') return null;
+  const amount = parseFloat(match[1].replace(/,/g, ''));
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+/** Public display rate. showPeso follows each page's own rule for when pesos are shown. */
+export function displayJobRate(
+  job: JobPay & { rate?: string | null },
+  showPeso: boolean,
+  phpPerUsd: number,
+): string | null {
+  if (job.rate_min != null) {
+    if (!showPeso) return formatUsdRate(job);
+    return phpRateText({ ...job, hours_option: job.hours_option ?? '40-50' }, phpPerUsd) ?? formatUsdRate(job);
+  }
+  if (!job.rate) return null;
+  if (!showPeso) return job.rate;
+  const usd = parseLegacyUsdHourly(job.rate);
+  if (usd == null) return job.rate;
+  return phpRateText({ rate_type: 'fixed', rate_min: usd, hours_option: '40-50' }, phpPerUsd) ?? job.rate;
+}

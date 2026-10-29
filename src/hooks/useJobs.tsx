@@ -7,6 +7,10 @@ export interface Job {
   title: string;
   department: string;
   rate: string | null;
+  rate_type?: string | null;
+  rate_min?: number | null;
+  rate_max?: number | null;
+  hours_option?: string | null;
   apply_url: string;
   description: string | null;
   qualifications: string[] | null;

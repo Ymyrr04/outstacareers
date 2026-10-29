@@ -10,18 +10,18 @@ import { toast } from "sonner";
 import { generateJobUrl } from "@/lib/slugify";
 import Navigation from "@/components/ui/navigation";
 import { useAnalytics } from "@/hooks/useAnalytics";
-
-// Fixed conversion values for Philippines
-const USD_TO_PHP_RATE = 56;
-const WEEKS_PER_MONTH = 4;
-const MIN_HOURS_PER_WEEK = 40;
-const MAX_HOURS_PER_WEEK = 50;
+import { displayJobRate, formatHours } from "@/lib/jobRate";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 interface Job {
   id: string;
   title: string;
   department: string | null;
   rate: string | null;
+  rate_type?: string | null;
+  rate_min?: number | null;
+  rate_max?: number | null;
+  hours_option?: string | null;
   apply_url: string | null;
   description: string | null;
   qualifications: string[] | null;
@@ -31,43 +31,13 @@ interface Job {
   created_at: string;
 }
 
-// Helper function to parse USD hourly rate
-const parseUsdHourlyRate = (rate: string): number | null => {
-  if (rate.startsWith('₱')) return null;
-  
-  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
-  if (!match) return null;
-  
-  const amount = parseFloat(match[1].replace(/,/g, ''));
-  const period = match[2]?.toLowerCase() || '';
-  
-  if (period && period !== 'hour' && period !== 'hr') return null;
-  
-  return amount;
-};
-
-// Helper function to convert USD hourly rate to PHP monthly range
-const convertToPhpMonthlyRange = (rate: string, region: string | null): string => {
-  if (region !== 'philippines' && region !== 'all') return rate;
-  
-  const hourlyRate = parseUsdHourlyRate(rate);
-  if (!hourlyRate) return rate;
-  
-  const minMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  const maxMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  
-  const formattedMin = minMonthly.toLocaleString('en-PH');
-  const formattedMax = maxMonthly.toLocaleString('en-PH');
-  
-  return `₱${formattedMin} - ₱${formattedMax}/month`;
-};
-
 const JobDetails = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const { rate: phpRate } = useExchangeRate();
   const { trackJobView, trackApplyClick } = useAnalytics();
 
   useEffect(() => {
@@ -121,10 +91,9 @@ const JobDetails = () => {
     }
   };
 
-  const getDisplayRate = (job: Job): string | null => {
-    if (!job.rate) return null;
-    return convertToPhpMonthlyRange(job.rate, job.region);
-  };
+  // Pesos are shown for Philippines and all-region jobs
+  const getDisplayRate = (job: Job): string | null =>
+    displayJobRate(job, job.region === 'philippines' || job.region === 'all', phpRate);
 
   if (loading) {
     return (
@@ -205,6 +174,7 @@ const JobDetails = () => {
                     {displayRate}
                   </p>
                 )}
+                {formatHours(job.hours_option) && (<p className="text-base text-muted-foreground">{formatHours(job.hours_option)}</p>)}
               </div>
 
               {/* Description */}
