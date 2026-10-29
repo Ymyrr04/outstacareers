@@ -18,6 +18,7 @@ interface WysiwygEditorProps {
   minHeight?: string;
   autoFocus?: boolean;
   onReady?: (editor: Editor) => void;
+  preservePasteFormatting?: boolean;
 }
 
 export function WysiwygEditor({
@@ -28,6 +29,7 @@ export function WysiwygEditor({
   minHeight = "100px",
   autoFocus = false,
   onReady,
+  preservePasteFormatting = false,
 }: WysiwygEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
@@ -90,6 +92,7 @@ export function WysiwygEditor({
         },
       },
       handlePaste: (view, event) => {
+        if (preservePasteFormatting) return false;
         // Check if we have HTML content
         const htmlContent = event.clipboardData?.getData('text/html');
         if (htmlContent && htmlContent.includes('<')) {

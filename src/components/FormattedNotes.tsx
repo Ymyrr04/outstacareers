@@ -4,13 +4,14 @@ import DOMPurify from 'dompurify';
 interface FormattedNotesProps {
   content: string;
   className?: string;
+  preserveFormatting?: boolean;
 }
 
 /**
  * Renders notes with HTML formatting from WYSIWYG editor.
  * Falls back to markdown-style parsing for legacy content.
  */
-export function FormattedNotes({ content, className = '' }: FormattedNotesProps) {
+export function FormattedNotes({ content, className = '', preserveFormatting = false }: FormattedNotesProps) {
   const formattedHtml = useMemo(() => {
     if (!content) return '';
     
@@ -44,10 +45,10 @@ export function FormattedNotes({ content, className = '' }: FormattedNotesProps)
     
     // Sanitize the HTML
     return DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: ['p', 'strong', 'em', 'u', 'a', 'br', 'ul', 'ol', 'li'],
-      ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+      ALLOWED_TAGS: ['p', 'strong', 'em', 'u', 'a', 'br', 'ul', 'ol', 'li', ...(preserveFormatting ? ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'hr', 's'] : [])],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', ...(preserveFormatting ? ['start'] : [])],
     });
-  }, [content]);
+  }, [content, preserveFormatting]);
 
   if (!content) {
     return null;
@@ -55,7 +56,7 @@ export function FormattedNotes({ content, className = '' }: FormattedNotesProps)
 
   return (
     <div 
-      className={`text-sm text-foreground prose prose-sm max-w-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_a]:text-primary [&_a]:hover:underline ${className}`}
+      className={`text-sm text-foreground prose prose-sm max-w-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_a]:text-primary [&_a]:hover:underline ${preserveFormatting ? 'whitespace-pre-wrap break-words [&_p:empty]:min-h-[1.25em] [&_strong]:font-bold' : ''} ${className}`}
       dangerouslySetInnerHTML={{ __html: formattedHtml }}
     />
   );

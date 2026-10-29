@@ -7,6 +7,7 @@ interface NotesEditorProps {
   disabled?: boolean;
   minHeight?: string;
   autoFocus?: boolean;
+  preservePasteFormatting?: boolean;
 }
 
 export function NotesEditor({ 
@@ -16,6 +17,7 @@ export function NotesEditor({
   disabled = false,
   minHeight = "100px",
   autoFocus = false,
+  preservePasteFormatting = false,
 }: NotesEditorProps) {
   return (
     <WysiwygEditor
@@ -25,6 +27,7 @@ export function NotesEditor({
       disabled={disabled}
       minHeight={minHeight}
       autoFocus={autoFocus}
+      preservePasteFormatting={preservePasteFormatting}
     />
   );
 }

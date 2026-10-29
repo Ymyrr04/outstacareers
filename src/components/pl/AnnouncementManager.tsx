@@ -92,7 +92,7 @@ export function AnnouncementManager() {
         const chosen = Array.from(e.clipboardData.files);
         if (chosen.length) { e.preventDefault(); e.stopPropagation(); addFiles(chosen); }
       }}>
-        <NotesEditor value={body} onChange={setBody} minHeight="180px" disabled={busy} />
+        <NotesEditor value={body} onChange={setBody} minHeight="180px" disabled={busy} preservePasteFormatting />
         {editing && editing.portal_announcement_files.some(f => f.mime_type.startsWith('image/') && !removed.includes(f.id)) && <div className="px-3 pb-3"><AnnouncementContent announcement={{ ...editing, body_html: '', portal_announcement_files: editing.portal_announcement_files.filter(f => f.mime_type.startsWith('image/') && !removed.includes(f.id)) }} /></div>}
         {files.some(f => f.type.startsWith('image/')) && <div className="space-y-3 px-3 pb-3">{files.map((f, i) => f.type.startsWith('image/') && <AnnouncementImagePreview key={i} file={f} />)}</div>}
       </div>
