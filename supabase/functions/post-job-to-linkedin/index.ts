@@ -19,6 +19,8 @@ function buildPostText(job: any): string {
   if (job.department) lines.push(`Team: ${job.department}`);
   if (job.region && job.region !== 'all') lines.push(`Location: ${job.region}`);
   if (job.rate) lines.push(`Rate: ${job.rate}`);
+  const hours = job.hours_option === '40' ? '40 hrs/week' : job.hours_option === '50' ? '50 hrs/week' : job.hours_option === '40-50' ? '40–50 hrs/week' : null;
+  if (hours) lines.push(`Hours: ${hours}`);
   lines.push('');
 
   const desc = stripHtml(job.description);
