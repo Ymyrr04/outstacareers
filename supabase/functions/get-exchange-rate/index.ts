@@ -1,78 +1,37 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Allowed origins for CORS - add your production domain(s) here
-const allowedOrigins = [
-  'https://ohxtavjababtrcrkgndq.lovableproject.com',
-  'https://lovable.dev',
-  // Lovable preview domains
-];
+const MAX_AGE_MS = 12 * 60 * 60 * 1000;
+const FALLBACK = 56;
 
-// Check if origin is allowed (also allows Lovable preview URLs)
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return false;
-  
-  // Allow exact matches
-  if (allowedOrigins.includes(origin)) return true;
-  
-  // Allow Lovable preview domains (*.lovable.app, *.lovableproject.com)
-  if (origin.endsWith('.lovable.app') || origin.endsWith('.lovableproject.com')) {
-    return true;
-  }
-  
-  // Allow localhost for development
-  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-    return true;
-  }
-  
-  return false;
-}
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const json = (body: unknown) =>
+    new Response(JSON.stringify(body), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-function getCorsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get('origin');
-  const allowedOrigin = isAllowedOrigin(origin) ? origin! : allowedOrigins[0];
-  
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  };
-}
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const { data: row } = await supabase
+    .from('exchange_rates').select('rate_per_usd, fetched_at').eq('currency', 'PHP').maybeSingle();
 
-serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
-  
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const stored = row
+    ? { rate: Number(row.rate_per_usd), fetched_at: row.fetched_at as string }
+    : { rate: FALLBACK, fetched_at: null };
+
+  if (row && Date.now() - new Date(row.fetched_at).getTime() < MAX_AGE_MS) return json(stored);
 
   try {
-    console.log('Fetching exchange rate from open.er-api.com');
-    const response = await fetch('https://open.er-api.com/v6/latest/USD');
-    
-    if (!response.ok) {
-      console.error('Exchange rate API returned error:', response.status);
-      throw new Error('Failed to fetch exchange rate');
-    }
-
-    const data = await response.json();
-    const phpRate = data.rates?.PHP;
-
-    if (!phpRate) {
-      console.error('PHP rate not found in response:', data);
-      throw new Error('PHP rate not found');
-    }
-
-    console.log('Successfully fetched PHP rate:', phpRate);
-    return new Response(
-      JSON.stringify({ rate: phpRate, success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Exchange rate error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const body = await res.json();
+    const rate = Number(body?.rates?.PHP);
+    if (!Number.isFinite(rate) || rate <= 0) throw new Error('invalid PHP rate');
+    const fetched_at = new Date().toISOString();
+    const { error } = await supabase
+      .from('exchange_rates').upsert({ currency: 'PHP', rate_per_usd: rate, fetched_at });
+    if (error) console.error('upsert failed', error.message);
+    return json({ rate, fetched_at });
+  } catch (e) {
+    console.error('exchange rate fetch failed', e);
+    return json(stored);
   }
 });

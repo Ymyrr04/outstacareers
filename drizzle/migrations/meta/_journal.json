@@ -372,6 +372,13 @@
       "when": 1793283352210,
       "tag": "0052_announcement_required_acknowledgement",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793308243705,
+      "tag": "0053_job_pay_fields_exchange_rates",
+      "breakpoints": true
     }
   ]
 }
