@@ -22,6 +22,9 @@ import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsMana
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 import JobBlastTargetingDialog from '@/components/JobBlastTargetingDialog';
 import JobClientSelect from '@/components/JobClientSelect';
+import JobRateFields from '@/components/JobRateFields';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { buildJobPay, DEFAULT_RATE_FORM, rateFormFromJob, type RateFormValue } from '@/lib/jobRate';
 
 interface CustomQuestion {
   id?: string;
@@ -111,7 +114,8 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     client_id: '' as string,
     post_to_linkedin: false,
   });
-  const [convertedRate, setConvertedRate] = useState<string | null>(null);
+  const { rate: phpRate } = useExchangeRate();
+  const [rateForm, setRateForm] = useState<RateFormValue>(DEFAULT_RATE_FORM);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
   const { toast } = useToast();
 
@@ -193,20 +197,6 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     }
   };
 
-  // Convert rate when region changes to Philippines or rate changes
-  useEffect(() => {
-    if (formData.region === 'philippines' && formData.rate) {
-      const hourlyRate = parseUsdHourlyRate(formData.rate);
-      if (hourlyRate) {
-        const { min, max } = calculatePhpMonthlyRange(hourlyRate);
-        setConvertedRate(formatPhpMonthlyRange(min, max));
-      } else {
-        setConvertedRate(null);
-      }
-    } else {
-      setConvertedRate(null);
-    }
-  }, [formData.region, formData.rate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,10 +213,12 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       return;
     }
 
-    // Use converted rate for Philippines region if available
-    const finalRate = formData.region === 'philippines' && convertedRate 
-      ? convertedRate 
-      : formData.rate || null;
+    const pay = buildJobPay(rateForm, formData.region, phpRate, null);
+    if (!pay.ok) {
+      toast({ title: 'Validation Error', description: pay.error, variant: 'destructive' });
+      setIsLoading(false);
+      return;
+    }
 
     // Filter out empty qualifications and responsibilities
     const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
@@ -234,7 +226,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
 
     const { data: newJob, error } = await supabase.from('jobs').insert({
       title: formData.title,
-      rate: finalRate,
+      ...pay.value,
       apply_url: '', // Empty string as default since applications are handled internally
       description: formData.description || null,
       region: formData.region,
@@ -310,7 +302,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       client_id: '',
       post_to_linkedin: false,
     });
-    setConvertedRate(null);
+    setRateForm(DEFAULT_RATE_FORM);
     setCustomQuestions([]);
     setOpen(false);
     onJobAdded();
@@ -346,28 +338,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="rate">Rate in USD (optional)</Label>
-            <Input
-              id="rate"
-              value={formData.rate}
-              onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-              placeholder="e.g., $5/hour"
-            />
-            {formData.region === 'philippines' && formData.rate && (
-              <div className="text-sm text-muted-foreground">
-                {convertedRate ? (
-                  <span className="text-primary font-medium">
-                    Will be saved as: {convertedRate}
-                  </span>
-                ) : (
-                  <span className="text-destructive">
-                    Enter USD hourly rate (e.g., "$5/hour")
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+          <JobRateFields idPrefix="rate" value={rateForm} onChange={setRateForm} region={formData.region} phpRate={phpRate}  />
 
           <div className="space-y-2">
             <Label htmlFor="region">Region</Label>

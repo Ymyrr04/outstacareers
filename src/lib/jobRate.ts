@@ -60,3 +60,67 @@ export function formatPhpMonthly(pay: JobPay, phpPerUsd: number): string | null 
 
 export const usesPhpConversion = (region: string | null | undefined) =>
   (region ?? '').toLowerCase() === 'philippines';
+
+export interface RateFormValue {
+  rateType: RateType;
+  min: string;
+  max: string;
+  hoursOption: HoursOption;
+}
+
+export const DEFAULT_RATE_FORM: RateFormValue = { rateType: 'fixed', min: '', max: '', hoursOption: '40-50' };
+
+const AMOUNT_RE = /^\d+(\.\d{1,2})?$/;
+
+/** Form value from a stored job; old jobs without rate_min start with blank boxes. */
+export function rateFormFromJob(job: JobPay): RateFormValue {
+  const type: RateType = job.rate_type === 'range' ? 'range' : 'fixed';
+  const hours = (['40', '50', '40-50'] as const).find((h) => h === job.hours_option) ?? '40-50';
+  return {
+    rateType: type,
+    min: job.rate_min == null ? '' : String(Number(job.rate_min)),
+    max: type === 'range' && job.rate_max != null ? String(Number(job.rate_max)) : '',
+    hoursOption: hours,
+  };
+}
+
+/** Saved PHP text, e.g. "₱44,800 - ₱56,000/month". */
+export function phpRateText(pay: JobPay, phpPerUsd: number): string | null {
+  const m = computePhpMonthly(pay, phpPerUsd);
+  if (!m) return null;
+  const f = (n: number) => `₱${n.toLocaleString('en-US')}`;
+  return m.min === m.max ? `${f(m.min)}/month` : `${f(m.min)} - ${f(m.max)}/month`;
+}
+
+export type JobPaySave = {
+  rate_type: RateType;
+  rate_min: number | null;
+  rate_max: number | null;
+  hours_option: HoursOption;
+  rate: string | null;
+};
+
+/** Validates form input and builds the job pay columns, including the display rate text. */
+export function buildJobPay(
+  v: RateFormValue,
+  region: string | null | undefined,
+  phpPerUsd: number,
+  legacyRate: string | null = null,
+): { ok: true; value: JobPaySave; error?: undefined } | { ok: false; error: string; value?: undefined } {
+  const minS = v.min.trim();
+  const maxS = v.rateType === 'range' ? v.max.trim() : '';
+  const base = { rate_type: v.rateType, hours_option: v.hoursOption };
+  if (!minS && !maxS) {
+    return { ok: true, value: { ...base, rate_min: null, rate_max: null, rate: legacyRate || null } };
+  }
+  if (v.rateType === 'range' && (!minS || !maxS)) return { ok: false, error: 'Enter both a minimum and maximum rate.' };
+  if (!AMOUNT_RE.test(minS) || (maxS && !AMOUNT_RE.test(maxS))) {
+    return { ok: false, error: 'Rate must be a number with up to 2 decimals.' };
+  }
+  const min = Number(minS);
+  const max = v.rateType === 'range' ? Number(maxS) : min;
+  if (max < min) return { ok: false, error: 'Maximum rate must be at least the minimum.' };
+  const pay: JobPay = { rate_type: v.rateType, rate_min: min, rate_max: max, hours_option: v.hoursOption };
+  const rate = usesPhpConversion(region) ? phpRateText(pay, phpPerUsd) : formatUsdRate(pay);
+  return { ok: true, value: { ...base, rate_min: min, rate_max: max, rate } };
+}
