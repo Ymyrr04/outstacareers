@@ -393,6 +393,13 @@
       "when": 1793302326105,
       "tag": "0055_fix_jobs_usd_rates_empty",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1793302340794,
+      "tag": "0056_fix_jobs_usd_rates_trim",
+      "breakpoints": true
     }
   ]
 }
