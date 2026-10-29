@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
+const expect = (v: unknown) => ({ toBe: (e: unknown) => assert.strictEqual(v, e), toEqual: (e: unknown) => assert.deepStrictEqual(v, e) });
 import { formatUsdRate, formatHours, computePhpMonthly, formatPhpMonthly, usesPhpConversion } from './jobRate';
 
 describe('jobRate', () => {
