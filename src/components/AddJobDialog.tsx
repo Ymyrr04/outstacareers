@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { calculatePhpMonthlyRange, formatPhpMonthlyRange, parseUsdHourlyRate } from '@/lib/jobRates';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 import JobBlastTargetingDialog from '@/components/JobBlastTargetingDialog';
