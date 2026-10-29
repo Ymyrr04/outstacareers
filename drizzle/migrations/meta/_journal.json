@@ -379,6 +379,13 @@
       "when": 1793302235855,
       "tag": "0053_jobs_usd_hourly_rates",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793302315007,
+      "tag": "0054_fix_jobs_usd_rates",
+      "breakpoints": true
     }
   ]
 }
