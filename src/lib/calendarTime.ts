@@ -73,6 +73,13 @@ export const inputToMinutes = (val: string) => {
   return (h || 0) * 60 + (m || 0);
 };
 
+/**
+ * Default end time when a start time is picked on the calendar: 30 minutes after
+ * the start, clamped to the last picker slot (11:45 PM) so the value stays valid.
+ */
+export const autoEndTime = (startInput: string) =>
+  minutesToInput(Math.min(inputToMinutes(startInput) + 30, 23 * 60 + 45));
+
 export const formatDateLong = (dateStr: string) =>
   new Intl.DateTimeFormat('en-US', {
     timeZone: ET_TZ,

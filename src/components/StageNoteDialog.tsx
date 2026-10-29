@@ -17,7 +17,7 @@ import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Loader2, Save, CalendarPlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
-import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
+import { EVENT_TYPES, inputToMinutes, todayET, autoEndTime } from '@/lib/calendarTime';
 import { defaultsToCalendarOnMove } from '@/lib/stageNoteCalendar';
 
 function escapeNoteText(value: string) {
@@ -365,7 +365,7 @@ function StageNoteSession({ pending, onOpenChange, onSaved, onCancel }: Props & 
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="sn-start" className="text-xs">Start (ET)</Label>
-                  <TimeSelect id="sn-start" value={calStart} onChange={setCalStart} />
+                  <TimeSelect id="sn-start" value={calStart} onChange={(v) => { setCalStart(v); setCalEnd(autoEndTime(v)); }} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="sn-end" className="text-xs">End (ET)</Label>

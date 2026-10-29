@@ -13,7 +13,7 @@ import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Loader2, CalendarPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
-import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
+import { EVENT_TYPES, inputToMinutes, todayET, autoEndTime } from '@/lib/calendarTime';
 
 interface Props {
   open: boolean;
@@ -157,7 +157,7 @@ export function AddCandidateCalendarDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="acc-start" className="text-xs">Start (ET)</Label>
-              <TimeSelect id="acc-start" value={start} onChange={setStart} />
+              <TimeSelect id="acc-start" value={start} onChange={(v) => { setStart(v); setEnd(autoEndTime(v)); }} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="acc-end" className="text-xs">End (ET)</Label>
