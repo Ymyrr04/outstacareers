@@ -1691,8 +1691,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                       // and when the mousedown landed on a card.
                       if (e.button !== 0) return;
                       const target = e.target as HTMLElement;
+                      // Dialogs are portalled outside the column, but React
+                      // still bubbles their events through this handler.
+                      if (!e.currentTarget.contains(target)) return;
                       if (target.closest('[data-candidate-card]')) return;
-                      if (target.closest('button, a, input, select, textarea')) return;
+                      if (target.closest('button, a, input, select, textarea, [contenteditable="true"]')) return;
 
                       const container = e.currentTarget as HTMLDivElement;
                       lassoContainerRef.current = container;
