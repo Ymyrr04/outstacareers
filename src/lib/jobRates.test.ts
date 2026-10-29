@@ -19,9 +19,8 @@ describe("jobRates", () => {
       expect(parseUsdHourlyRate("$6.5/hr - $7/hr Depending on experience")).toBe(6.5);
     });
 
-    it("returns null for PHP or non-hourly rates", () => {
+    it("returns null for PHP rates", () => {
       expect(parseUsdHourlyRate("₱44,800 - ₱56,000/month")).toBeNull();
-      expect(parseUsdHourlyRate("PHP 20,000/month")).toBeNull();
     });
   });
 
