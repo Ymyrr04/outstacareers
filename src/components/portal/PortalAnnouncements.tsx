@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AnnouncementContent } from './AnnouncementContent';
-import { unreadAnnouncements, type PortalAnnouncement } from '@/lib/portalAnnouncements';
+import { announcementVersion, unreadAnnouncements, type PortalAnnouncement } from '@/lib/portalAnnouncements';
 import { ChevronRight, Loader2 } from 'lucide-react';
 
 export function PortalAnnouncements({ showList }: { showList: boolean }) {
@@ -16,7 +16,8 @@ export function PortalAnnouncements({ showList }: { showList: boolean }) {
     let live = true;
     async function load() {
       const [announcements, reads] = await Promise.all([
-        supabase.from('portal_announcements').select('*, portal_announcement_files(*)').not('published_at', 'is', null).order('published_at', { ascending: false }),
+        // RLS permits published messages and only this account's private sample.
+        supabase.from('portal_announcements').select('*, portal_announcement_files(*)').or('published_at.not.is.null,sample_at.not.is.null').order('created_at', { ascending: false }),
         supabase.from('portal_announcement_reads').select('announcement_id, published_at'),
       ]);
       if (!live) return;
@@ -28,9 +29,10 @@ export function PortalAnnouncements({ showList }: { showList: boolean }) {
   }, []);
   const current = pending[0];
   const dismiss = async () => {
-    if (!current?.published_at || busy) return;
+    const version = current && announcementVersion(current);
+    if (!current || !version || busy) return;
     setBusy(true); setError('');
-    const { error } = await supabase.from('portal_announcement_reads').upsert({ announcement_id: current.id, published_at: current.published_at }, { onConflict: 'user_id,announcement_id,published_at', ignoreDuplicates: true });
+    const { error } = await supabase.from('portal_announcement_reads').upsert({ announcement_id: current.id, published_at: version }, { onConflict: 'user_id,announcement_id,published_at', ignoreDuplicates: true });
     if (error) setError('Could not save. Please try again.'); else setPending(p => p.slice(1));
     setBusy(false);
   };

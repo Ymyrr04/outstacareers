@@ -3901,6 +3901,8 @@ export type Database = {
           created_at: string
           id: string
           published_at: string | null
+          sample_at: string | null
+          sample_user_id: string | null
           title: string
           updated_at: string
         }
@@ -3909,6 +3911,8 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string | null
+          sample_at?: string | null
+          sample_user_id?: string | null
           title: string
           updated_at?: string
         }
@@ -3917,6 +3921,8 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string | null
+          sample_at?: string | null
+          sample_user_id?: string | null
           title?: string
           updated_at?: string
         }
