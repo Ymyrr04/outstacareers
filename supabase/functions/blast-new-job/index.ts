@@ -32,9 +32,17 @@ function escapeHtml(s: string): string {
 }
 
 function formatRate(rate: string | null, region: string | null): string {
-  if (!rate) return "Competitive compensation";
+  if (!rate || !rate.trim()) return "Competitive compensation";
+  if (rate.includes("$") || rate.includes("₱")) return rate;
   if (region === "philippines") return `₱${rate}/month`;
   return `$${rate}/hr`;
+}
+
+function formatHours(h: string | null): string | null {
+  if (h === "40") return "40 hrs/week";
+  if (h === "50") return "50 hrs/week";
+  if (h === "40-50") return "40–50 hrs/week";
+  return null;
 }
 
 function buildEmailHtml(opts: {
@@ -44,6 +52,7 @@ function buildEmailHtml(opts: {
     title: string;
     rate: string | null;
     region: string | null;
+    hours_option?: string | null;
     description: string | null;
     qualifications: string[] | null;
     responsibilities: string[] | null;
@@ -77,6 +86,7 @@ function buildEmailHtml(opts: {
 <span style="display:inline-block;">○ General</span>
 </div>
 <p style="font-size:22px;font-weight:700;color:#1e3a5f;margin:0 0 20px;">${escapeHtml(formatRate(job.rate, job.region))}</p>
+${formatHours(job.hours_option ?? null) ? `<p style="font-size:15px;color:#334155;margin:-14px 0 20px;">Hours: ${escapeHtml(formatHours(job.hours_option ?? null)!)}</p>` : ""}
 ${job.description ? `<p style="margin:0 0 28px;color:#334155;">${escapeHtml(job.description)}</p>` : ""}
 ${respHtml ? `<h2 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 14px;">Key Responsibilities</h2><ul style="margin:0 0 28px;padding-left:20px;color:#334155;">${respHtml}</ul>` : ""}
 ${qualHtml ? `<h2 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 14px;">Key Qualifications</h2><ul style="margin:0 0 32px;padding-left:20px;color:#334155;">${qualHtml}</ul>` : ""}
@@ -109,7 +119,7 @@ serve(async (req) => {
 
     const { data: job, error } = await supabase
       .from("jobs")
-      .select("id, title, rate, region, description, qualifications, responsibilities")
+      .select("id, title, rate, region, hours_option, description, qualifications, responsibilities")
       .eq("id", jobId)
       .single();
 
