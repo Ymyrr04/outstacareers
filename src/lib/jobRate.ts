@@ -106,7 +106,7 @@ export function buildJobPay(
   region: string | null | undefined,
   phpPerUsd: number,
   legacyRate: string | null = null,
-): { ok: true; value: JobPaySave } | { ok: false; error: string } {
+): { ok: true; value: JobPaySave; error?: undefined } | { ok: false; error: string; value?: undefined } {
   const minS = v.min.trim();
   const maxS = v.rateType === 'range' ? v.max.trim() : '';
   const base = { rate_type: v.rateType, hours_option: v.hoursOption };
