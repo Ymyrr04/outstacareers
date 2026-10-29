@@ -19,7 +19,7 @@ export function AnnouncementContent({ announcement }: { announcement: PortalAnno
     return () => { live = false; };
   }, [announcement]);
   return <div className="space-y-4">
-    <FormattedNotes content={announcement.body_html} />
+    <FormattedNotes content={announcement.body_html} preserveFormatting />
     {error && <p role="alert" className="text-sm text-destructive">Files could not be loaded. Please reopen the announcement to try again.</p>}
     {announcement.portal_announcement_files.map(f => <div key={f.id} className="space-y-2">
       {f.mime_type.startsWith('image/') && urls[f.id] && <img src={urls[f.id]} alt={f.name} className="max-h-96 max-w-full object-contain rounded-md" />}
