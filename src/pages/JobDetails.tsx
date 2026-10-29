@@ -10,12 +10,8 @@ import { toast } from "sonner";
 import { generateJobUrl } from "@/lib/slugify";
 import Navigation from "@/components/ui/navigation";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { displayRateForRegion } from "@/lib/jobRates";
 
-// Fixed conversion values for Philippines
-const USD_TO_PHP_RATE = 56;
-const WEEKS_PER_MONTH = 4;
-const MIN_HOURS_PER_WEEK = 40;
-const MAX_HOURS_PER_WEEK = 50;
 
 interface Job {
   id: string;
