@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { NotesEditor } from '@/components/NotesEditor';
 import { NewsletterImage } from './NewsletterImage';
@@ -18,6 +19,7 @@ export function AnnouncementManager() {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [requiresAcknowledgement, setRequiresAcknowledgement] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -52,7 +54,7 @@ export function AnnouncementManager() {
       });
     }
   };
-  const edit = (a: PortalAnnouncement | null) => { setEditing(a); setTitle(a?.title || ''); setBody(a?.body_html || ''); setFiles([]); setRemoved([]); setOpen(true); };
+  const edit = (a: PortalAnnouncement | null) => { setEditing(a); setTitle(a?.title || ''); setBody(a?.body_html || ''); setRequiresAcknowledgement(a?.requires_acknowledgement === true); setFiles([]); setRemoved([]); setOpen(true); };
   const save = async (publish: boolean) => {
     const parsed = announcementSchema.safeParse({ title, body_html: body });
     if (!parsed.success) { toast({ title: 'Add a subject (up to 200 characters) and a valid message.', variant: 'destructive' }); return; }
@@ -69,7 +71,7 @@ export function AnnouncementManager() {
         if (!retainedIds.has(img.getAttribute('data-file-id') || '')) img.remove();
         else img.removeAttribute('src');
       });
-      const { error } = await supabase.from('portal_announcements').upsert({ id, title: parsed.data.title || '', body_html: doc.body.innerHTML, published_at: null });
+      const { error } = await supabase.from('portal_announcements').upsert({ id, title: parsed.data.title || '', body_html: doc.body.innerHTML, requires_acknowledgement: requiresAcknowledgement, published_at: null });
       if (error) throw error;
       for (const file of files) {
         const validation = validateAnnouncementFile(file); if (validation) throw new Error(validation);
@@ -105,6 +107,7 @@ export function AnnouncementManager() {
     </div>)}
     <Dialog open={open} onOpenChange={v => { if (!busy) setOpen(v); }}><DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editing ? 'Edit announcement' : 'Add announcement'}</DialogTitle><DialogDescription>Contractor portal announcement</DialogDescription></DialogHeader>
       <div className="space-y-2"><Label htmlFor="announcement-title">Subject</Label><Input id="announcement-title" maxLength={200} value={title} onChange={e => setTitle(e.target.value)} disabled={busy} /></div>
+      <div className="flex items-center justify-between gap-4 border-b pb-3"><Label htmlFor="announcement-must-read">Must read — acknowledgement required</Label><Switch id="announcement-must-read" checked={requiresAcknowledgement} onCheckedChange={setRequiresAcknowledgement} disabled={busy} /></div>
       <Label>Message</Label>
       <div aria-label="Announcement message" className="space-y-3 rounded-md border bg-background" onDragOverCapture={e => {
         if (Array.from(e.dataTransfer.types).includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
