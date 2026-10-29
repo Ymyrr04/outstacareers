@@ -191,10 +191,8 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       return;
     }
 
-    // Use converted rate for Philippines region if available
-    const finalRate = formData.region === 'philippines' && convertedRate 
-      ? convertedRate 
-      : formData.rate || null;
+    // USD hourly rate is stored as entered; PHP conversion happens only at display time
+    const finalRate = formData.rate || null;
 
     // Filter out empty qualifications and responsibilities
     const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
