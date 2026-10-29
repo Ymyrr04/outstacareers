@@ -351,6 +351,13 @@
       "when": 1793278074151,
       "tag": "0049_fix_announcement_file_read_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793281447432,
+      "tag": "0050_private_portal_announcement_samples",
+      "breakpoints": true
     }
   ]
 }
