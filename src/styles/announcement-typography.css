@@ -61,8 +61,8 @@ button.announcement-attachment {
   color: hsl(0 0% 100%);
 }
 button.announcement-attachment:hover:not([disabled]) {
-  background-color: hsl(190 60% 34%);
-  border-color: hsl(190 60% 34%);
+  background-color: hsl(192 100% 27%);
+  border-color: hsl(192 100% 27%);
   color: hsl(0 0% 100%);
 }
 
