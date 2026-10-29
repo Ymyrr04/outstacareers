@@ -130,10 +130,17 @@ export function AnnouncementManager() {
           })).then(entries => {
             if (editor.isDestroyed) return;
             const urls = Object.fromEntries(entries);
-            const doc = new DOMParser().parseFromString(editing.body_html, 'text/html');
-            doc.querySelectorAll('img').forEach(img => img.setAttribute('src', urls[img.getAttribute('data-file-id') || ''] || ''));
+            // Resolve images in the current document, not the saved snapshot:
+            // a slow storage request must not undo typing or newly inserted images.
+            const doc = new DOMParser().parseFromString(editor.getHTML(), 'text/html');
+            doc.querySelectorAll('img').forEach(img => {
+              const url = urls[img.getAttribute('data-file-id') || ''];
+              if (url) img.setAttribute('src', url);
+            });
             editor.commands.setContent(doc.body.innerHTML, { emitUpdate: false });
             setBody(editor.getHTML());
+          }).catch(() => {
+            if (!editor.isDestroyed) toast({ title: 'Image previews could not be loaded. Reopen the draft to try again.', variant: 'destructive' });
           });
         }} />
         {selectedImage && <div className="flex items-center gap-3 px-3 pb-3"><Label htmlFor="image-width">Image width</Label><Input id="image-width" aria-label="Image width" type="number" min={50} max={1200} value={imageWidth} className="w-24" onChange={e => { const width = Math.min(1200, Math.max(50, Number(e.target.value) || 50)); setImageWidth(width); editorRef.current?.chain().focus().updateAttributes('newsletterImage', { width }).run(); }} /><span className="text-sm text-muted-foreground">px</span><Button variant="ghost" size="icon" aria-label="Remove selected image" onClick={() => editorRef.current?.chain().focus().deleteSelection().run()}><X className="h-4 w-4" /></Button></div>}
