@@ -61,7 +61,14 @@ export function AnnouncementManager() {
     try {
       // Keep changes private until the message and every uploaded file are ready.
       const doc = new DOMParser().parseFromString(parsed.data.body_html || '', 'text/html');
-      doc.querySelectorAll('img').forEach(img => img.removeAttribute('src'));
+      const retainedIds = new Set([
+        ...(editing?.portal_announcement_files.filter(f => !removed.includes(f.id)).map(f => f.id) || []),
+        ...files.map(f => fileIds.current.get(f)).filter(Boolean),
+      ]);
+      doc.querySelectorAll('img').forEach(img => {
+        if (!retainedIds.has(img.getAttribute('data-file-id') || '')) img.remove();
+        else img.removeAttribute('src');
+      });
       const { error } = await supabase.from('portal_announcements').upsert({ id, title: parsed.data.title || '', body_html: doc.body.innerHTML, published_at: null });
       if (error) throw error;
       for (const file of files) {
