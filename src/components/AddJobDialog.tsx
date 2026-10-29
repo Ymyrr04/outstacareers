@@ -18,7 +18,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
-import { calculatePhpMonthlyRange, formatPhpMonthlyRange, parseUsdHourlyRate } from '@/lib/jobRates';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 import JobBlastTargetingDialog from '@/components/JobBlastTargetingDialog';
@@ -61,6 +60,39 @@ const cleanPastedText = (text: string): string => {
     .trim();
 };
 
+// Fixed conversion values for Philippines
+const USD_TO_PHP_RATE = 56;
+const WEEKS_PER_MONTH = 4;
+const MIN_HOURS_PER_WEEK = 40;
+const MAX_HOURS_PER_WEEK = 50;
+
+// Helper function to parse USD hourly rate
+const parseUsdHourlyRate = (rate: string): number | null => {
+  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
+  if (!match) return null;
+  
+  const amount = parseFloat(match[1].replace(/,/g, ''));
+  const period = match[2]?.toLowerCase() || '';
+  
+  // Only accept hourly rates
+  if (period && period !== 'hour' && period !== 'hr') return null;
+  
+  return amount;
+};
+
+// Helper function to calculate PHP monthly range from USD hourly rate
+const calculatePhpMonthlyRange = (usdHourlyRate: number): { min: number; max: number } => {
+  const minMonthly = Math.round(usdHourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
+  const maxMonthly = Math.round(usdHourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
+  return { min: minMonthly, max: maxMonthly };
+};
+
+// Helper function to format PHP monthly range
+const formatPhpMonthlyRange = (min: number, max: number): string => {
+  const formattedMin = min.toLocaleString('en-PH');
+  const formattedMax = max.toLocaleString('en-PH');
+  return `₱${formattedMin} - ₱${formattedMax}/month`;
+};
 
 const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -191,8 +223,10 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       return;
     }
 
-    // USD hourly rate is stored as entered; PHP conversion happens only at display time
-    const finalRate = formData.rate || null;
+    // Use converted rate for Philippines region if available
+    const finalRate = formData.region === 'philippines' && convertedRate 
+      ? convertedRate 
+      : formData.rate || null;
 
     // Filter out empty qualifications and responsibilities
     const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
