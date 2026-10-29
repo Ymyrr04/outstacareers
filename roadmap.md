@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Fix announcement attachment downloads without opening a blocked external file page.
+- [x] Fix announcement attachment downloads without opening a blocked external file page; verified the private contractor download saves the real 1,180,844-byte PDF, rendered its first page, stays in the portal with no runtime errors; five tests passed and build clean.
 - [x] Improve announcement readability with matching editor, draft and portal typography; preserved saved wording and image placement, verified real contractor reread with 16px text, 27.2px line height and loaded 500px image; five tests passed and build clean.
 - [x] Show the saved announcement draft only to laagmoto@gmail.com in the portal; verified the real contractor pop-up and 500px image, exactly one authorized contractor, unpublished draft, five tests and clean build. Fixed a storage path qualification issue during review.
 - [x] Add newsletter image placement and resizing in announcements; verified an inline image retains its position and 240px width after real draft save/readback; tests passed and build clean.
