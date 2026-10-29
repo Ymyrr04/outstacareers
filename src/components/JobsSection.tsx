@@ -8,6 +8,7 @@ import { generateJobUrl } from "@/lib/slugify";
 import { toast } from "sonner";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { matchesPublicJobRegion } from "@/lib/jobRegion";
 // Fixed conversion values for Philippines
 const USD_TO_PHP_RATE = 56;
 const WEEKS_PER_MONTH = 4;
@@ -269,22 +270,7 @@ const JobsSection = () => {
     }
   };
 
-  const philippinesJobs = jobs.filter(job => 
-    job.region === 'philippines' || job.region === 'all' || 
-    (!job.region && !job.title.toLowerCase().includes('bilingual'))
-  );
-  const latinAmericaJobs = jobs.filter(job => 
-    job.region === 'latin-america' || job.region === 'all' ||
-    (!job.region && job.title.toLowerCase().includes('bilingual'))
-  );
-  const globalJobs = jobs;
-
-  const displayedJobs =
-    selectedRegion === "philippines"
-      ? philippinesJobs
-      : selectedRegion === "latin-america"
-      ? latinAmericaJobs
-      : globalJobs;
+  const displayedJobs = jobs.filter(job => matchesPublicJobRegion(job, selectedRegion));
 
   // Get the display rate based on selected region
   const getDisplayRate = (job: Job): string | null => {
