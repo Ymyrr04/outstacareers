@@ -1,4 +1,5 @@
 import { computeDepositSchedule, requiredDepositHours, type DepositWeek } from '@/lib/depositSchedule';
+import { AnnouncementManager } from '@/components/pl/AnnouncementManager';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -1402,10 +1403,12 @@ export const PLDashboard = () => {
           <TabsTrigger value="analytics" className="gap-2">
             Analytics
           </TabsTrigger>
+          <TabsTrigger value="announcements">Announcements</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="flex flex-col gap-3">
+      {activeSubtab === 'announcements' && <AnnouncementManager />}
       {activeSubtab === 'pl_report' && <PLReport />}
       {activeSubtab === 'historical' && <HistoricalPL />}
       {activeSubtab === 'analytics' && <AnalyticsPL />}

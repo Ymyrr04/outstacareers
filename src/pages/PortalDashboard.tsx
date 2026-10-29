@@ -21,6 +21,7 @@ import { LeaveApplication } from '@/components/portal/LeaveApplication';
 import { LegalDocRequest } from '@/components/portal/LegalDocRequest';
 import { TimesheetTutorialDialog } from '@/components/portal/TimesheetTutorialDialog';
 import { PaymentProcessNotice, PaymentProcessAnnouncement } from '@/components/portal/PaymentProcessNotice';
+import { PortalAnnouncements } from '@/components/portal/PortalAnnouncements';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -2715,6 +2716,7 @@ const PortalDashboard = () => {
       </main>
 
       {/* Daily check-in reminder popup */}
+      {info && <PortalAnnouncements showList={false} />}
       <Dialog open={reminderOpen} onOpenChange={(o) => { if (!o) dismissReminderForToday(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
