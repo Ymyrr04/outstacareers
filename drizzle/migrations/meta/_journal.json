@@ -337,6 +337,13 @@
       "when": 1793024358101,
       "tag": "0047_disable_portal_on_resign_instead_of_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793277982243,
+      "tag": "0048_contractor_portal_announcements",
+      "breakpoints": true
     }
   ]
 }
