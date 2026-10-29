@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { NotesEditor } from '@/components/NotesEditor';
+import { AnnouncementImagePreview } from './AnnouncementImagePreview';
 import { AnnouncementContent } from '@/components/portal/AnnouncementContent';
 import { announcementSchema, announcementFileTypes, validateAnnouncementFile, type PortalAnnouncement } from '@/lib/portalAnnouncements';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,12 @@ export function AnnouncementManager() {
     else setItems(data || []);
   };
   useEffect(() => { void load(); }, []);
+  const addFiles = (chosen: File[]) => {
+    if (busy) return;
+    const invalid = chosen.map(validateAnnouncementFile).find(Boolean);
+    if (invalid) toast({ title: invalid, variant: 'destructive' });
+    else setFiles(prev => [...prev, ...chosen]);
+  };
   const edit = (a: PortalAnnouncement | null) => { setEditing(a); setTitle(a?.title || ''); setBody(a?.body_html || ''); setFiles([]); setRemoved([]); setOpen(true); };
   const save = async (publish: boolean) => {
     const parsed = announcementSchema.safeParse({ title, body_html: body });
@@ -72,10 +79,25 @@ export function AnnouncementManager() {
     </div>)}
     <Dialog open={open} onOpenChange={v => { if (!busy) setOpen(v); }}><DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editing ? 'Edit announcement' : 'Add announcement'}</DialogTitle><DialogDescription>Contractor portal announcement</DialogDescription></DialogHeader>
       <div className="space-y-2"><Label htmlFor="announcement-title">Subject</Label><Input id="announcement-title" maxLength={200} value={title} onChange={e => setTitle(e.target.value)} disabled={busy} /></div>
-      <Label>Message</Label><NotesEditor value={body} onChange={setBody} minHeight="180px" disabled={busy} />
+      <Label>Message</Label>
+      <div aria-label="Announcement message" className="space-y-3 rounded-md border bg-background" onDragOverCapture={e => {
+        if (Array.from(e.dataTransfer.types).includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+      }} onDropCapture={e => {
+        const chosen = Array.from(e.dataTransfer.files);
+        if (chosen.length) { e.preventDefault(); e.stopPropagation(); addFiles(chosen); }
+        else if (e.dataTransfer.getData('text/uri-list') || /<img\b/i.test(e.dataTransfer.getData('text/html'))) {
+          e.preventDefault(); e.stopPropagation(); toast({ title: 'Save the web image first, then drop the image file here.', variant: 'destructive' });
+        }
+      }} onPasteCapture={e => {
+        const chosen = Array.from(e.clipboardData.files);
+        if (chosen.length) { e.preventDefault(); e.stopPropagation(); addFiles(chosen); }
+      }}>
+        <NotesEditor value={body} onChange={setBody} minHeight="180px" disabled={busy} />
+        {editing && editing.portal_announcement_files.some(f => f.mime_type.startsWith('image/') && !removed.includes(f.id)) && <div className="px-3 pb-3"><AnnouncementContent announcement={{ ...editing, body_html: '', portal_announcement_files: editing.portal_announcement_files.filter(f => f.mime_type.startsWith('image/') && !removed.includes(f.id)) }} /></div>}
+        {files.some(f => f.type.startsWith('image/')) && <div className="space-y-3 px-3 pb-3">{files.map((f, i) => f.type.startsWith('image/') && <AnnouncementImagePreview key={i} file={f} />)}</div>}
+      </div>
       <input ref={input} type="file" multiple accept={announcementFileTypes.join(',')} className="hidden" onChange={e => {
-        const chosen = Array.from(e.target.files || []); const invalid = chosen.map(validateAnnouncementFile).find(Boolean);
-        if (invalid) toast({ title: invalid, variant: 'destructive' }); else setFiles(prev => [...prev, ...chosen]); e.target.value = '';
+        addFiles(Array.from(e.target.files || [])); e.target.value = '';
       }} />
       <Button variant="outline" disabled={busy} onClick={() => input.current?.click()}><Paperclip className="h-4 w-4 mr-2" />Add images or attachments</Button>
       {editing?.portal_announcement_files.filter(f => !removed.includes(f.id)).map(f => <div key={f.id} className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{f.name}</span><Button variant="ghost" size="icon" disabled={busy} aria-label={`Remove ${f.name}`} onClick={() => setRemoved(p => [...p, f.id])}><X className="h-4 w-4" /></Button></div>)}
