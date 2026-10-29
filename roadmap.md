@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Show the saved announcement draft only to laagmoto@gmail.com in the portal; keep general publication off and verify recipient isolation.
+- [x] Show the saved announcement draft only to laagmoto@gmail.com in the portal; verified the real contractor pop-up and 500px image, exactly one authorized contractor, unpublished draft, five tests and clean build. Fixed a storage path qualification issue during review.
 - [x] Add newsletter image placement and resizing in announcements; verified an inline image retains its position and 240px width after real draft save/readback; tests passed and build clean.
 - [x] Add admin contractor announcements with text, images and attachments, login pop-up and retained portal announcements; real draft save/readback and file preview verified, four tests passed, build clean. Contractor login pop-up not browser-verified with a contractor session.
 - [x] Add per-client weekly timesheet email scheduling in Portal Options; real save/reload verified and restored, live no-send digest grouped four real timesheets for one recipient, unauthenticated requests rejected, four tests and build clean; scheduled delivery runs every 30 minutes, actual mailbox receipt untested.
