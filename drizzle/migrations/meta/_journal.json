@@ -372,6 +372,34 @@
       "when": 1793283352210,
       "tag": "0052_announcement_required_acknowledgement",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793302235855,
+      "tag": "0053_jobs_usd_hourly_rates",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793302315007,
+      "tag": "0054_fix_jobs_usd_rates",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1793302326105,
+      "tag": "0055_fix_jobs_usd_rates_empty",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1793302340794,
+      "tag": "0056_fix_jobs_usd_rates_trim",
+      "breakpoints": true
     }
   ]
 }

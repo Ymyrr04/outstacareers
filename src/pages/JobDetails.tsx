@@ -10,12 +10,8 @@ import { toast } from "sonner";
 import { generateJobUrl } from "@/lib/slugify";
 import Navigation from "@/components/ui/navigation";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { displayRateForRegion } from "@/lib/jobRates";
 
-// Fixed conversion values for Philippines
-const USD_TO_PHP_RATE = 56;
-const WEEKS_PER_MONTH = 4;
-const MIN_HOURS_PER_WEEK = 40;
-const MAX_HOURS_PER_WEEK = 50;
 
 interface Job {
   id: string;
@@ -31,36 +27,6 @@ interface Job {
   created_at: string;
 }
 
-// Helper function to parse USD hourly rate
-const parseUsdHourlyRate = (rate: string): number | null => {
-  if (rate.startsWith('₱')) return null;
-  
-  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
-  if (!match) return null;
-  
-  const amount = parseFloat(match[1].replace(/,/g, ''));
-  const period = match[2]?.toLowerCase() || '';
-  
-  if (period && period !== 'hour' && period !== 'hr') return null;
-  
-  return amount;
-};
-
-// Helper function to convert USD hourly rate to PHP monthly range
-const convertToPhpMonthlyRange = (rate: string, region: string | null): string => {
-  if (region !== 'philippines' && region !== 'all') return rate;
-  
-  const hourlyRate = parseUsdHourlyRate(rate);
-  if (!hourlyRate) return rate;
-  
-  const minMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  const maxMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  
-  const formattedMin = minMonthly.toLocaleString('en-PH');
-  const formattedMax = maxMonthly.toLocaleString('en-PH');
-  
-  return `₱${formattedMin} - ₱${formattedMax}/month`;
-};
 
 const JobDetails = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -123,7 +89,7 @@ const JobDetails = () => {
 
   const getDisplayRate = (job: Job): string | null => {
     if (!job.rate) return null;
-    return convertToPhpMonthlyRange(job.rate, job.region);
+    return displayRateForRegion(job.rate, job.region);
   };
 
   if (loading) {

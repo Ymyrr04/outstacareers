@@ -8,31 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, ArrowLeft, Loader2, Building2 } from "lucide-react";
 
-// Fixed conversion values for Philippines
-const USD_TO_PHP_RATE = 56;
-const WEEKS_PER_MONTH = 4;
-const MIN_HOURS_PER_WEEK = 40;
-const MAX_HOURS_PER_WEEK = 50;
+import { displayRateForRegion } from "@/lib/jobRates";
 
-const parseUsdHourlyRate = (rate: string): number | null => {
-  if (rate.startsWith('₱')) return null;
-  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
-  if (!match) return null;
-  const amount = parseFloat(match[1].replace(/,/g, ''));
-  const period = match[2]?.toLowerCase() || '';
-  if (period && period !== 'hour' && period !== 'hr') return null;
-  return amount;
-};
-
-const convertToPhpMonthlyRange = (rate: string): string => {
-  const hourlyRate = parseUsdHourlyRate(rate);
-  if (!hourlyRate) return rate;
-  const minMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  const maxMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  const formattedMin = minMonthly.toLocaleString('en-PH');
-  const formattedMax = maxMonthly.toLocaleString('en-PH');
-  return `₱${formattedMin} - ₱${formattedMax}/month`;
-};
 
 const JobApplication = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -72,11 +49,9 @@ const JobApplication = () => {
 
   const getDisplayRate = (job: Job): string | null => {
     if (!job.rate) return null;
-    // Default to PHP conversion for direct links
-    if (job.region === 'philippines' || !job.region) {
-      return convertToPhpMonthlyRange(job.rate);
-    }
-    return job.rate;
+    // Direct links default to the PHP monthly display for Philippines jobs;
+    // everything else keeps the $ hourly rate.
+    return displayRateForRegion(job.rate, job.region ?? 'philippines');
   };
 
   if (loading) {
