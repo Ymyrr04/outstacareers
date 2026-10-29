@@ -79,7 +79,8 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [formData, setFormData] = useState({
     title: job.title,
-    rate: job.rate || '',
+    // Legacy PHP-stored rates are shown as their USD hourly equivalent for editing
+    rate: job.rate ? (phpMonthlyToUsdHourly(job.rate) ?? job.rate) : '',
     description: job.description || '',
     region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america' | 'global',
     qualifications: (job.qualifications && job.qualifications.length > 0) 
@@ -196,7 +197,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     if (open) {
       setFormData({
         title: job.title,
-        rate: job.rate || '',
+        rate: job.rate ? (phpMonthlyToUsdHourly(job.rate) ?? job.rate) : '',
         description: job.description || '',
         region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america' | 'global',
         qualifications: (job.qualifications && job.qualifications.length > 0) 
@@ -248,10 +249,8 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       return;
     }
 
-    // Use converted rate for Philippines region if available and rate looks like USD
-    const finalRate = formData.region === 'philippines' && convertedRate 
-      ? convertedRate 
-      : formData.rate || null;
+    // USD hourly rate is stored as entered; PHP conversion happens only at display time
+    const finalRate = formData.rate || null;
 
     // Filter out empty qualifications and responsibilities
     const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
