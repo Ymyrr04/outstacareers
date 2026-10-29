@@ -2857,6 +2857,24 @@ export type Database = {
         }
         Relationships: []
       }
+      exchange_rates: {
+        Row: {
+          currency: string
+          fetched_at: string
+          rate_per_usd: number
+        }
+        Insert: {
+          currency: string
+          fetched_at?: string
+          rate_per_usd: number
+        }
+        Update: {
+          currency?: string
+          fetched_at?: string
+          rate_per_usd?: number
+        }
+        Relationships: []
+      }
       export_jobs: {
         Row: {
           completed_at: string | null
@@ -3374,6 +3392,7 @@ export type Database = {
           created_at: string
           department: string | null
           description: string | null
+          hours_option: string | null
           id: string
           is_active: boolean | null
           linkedin_last_error: string | null
@@ -3383,6 +3402,9 @@ export type Database = {
           post_to_linkedin: boolean
           qualifications: string[] | null
           rate: string | null
+          rate_max: number | null
+          rate_min: number | null
+          rate_type: string | null
           region: string | null
           responsibilities: string[] | null
           title: string
@@ -3395,6 +3417,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           description?: string | null
+          hours_option?: string | null
           id?: string
           is_active?: boolean | null
           linkedin_last_error?: string | null
@@ -3404,6 +3427,9 @@ export type Database = {
           post_to_linkedin?: boolean
           qualifications?: string[] | null
           rate?: string | null
+          rate_max?: number | null
+          rate_min?: number | null
+          rate_type?: string | null
           region?: string | null
           responsibilities?: string[] | null
           title: string
@@ -3416,6 +3442,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           description?: string | null
+          hours_option?: string | null
           id?: string
           is_active?: boolean | null
           linkedin_last_error?: string | null
@@ -3425,6 +3452,9 @@ export type Database = {
           post_to_linkedin?: boolean
           qualifications?: string[] | null
           rate?: string | null
+          rate_max?: number | null
+          rate_min?: number | null
+          rate_type?: string | null
           region?: string | null
           responsibilities?: string[] | null
           title?: string
