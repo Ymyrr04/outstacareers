@@ -19,6 +19,9 @@ import { Switch } from '@/components/ui/switch';
 import { Pencil, Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobClientSelect from '@/components/JobClientSelect';
+import JobRateFields from '@/components/JobRateFields';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { buildJobPay, DEFAULT_RATE_FORM, rateFormFromJob, type RateFormValue } from '@/lib/jobRate';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 import { formatDateTime } from "@/lib/dateFormat";
@@ -43,6 +46,10 @@ interface Job {
   title: string;
   department: string | null;
   rate: string | null;
+  rate_type?: string | null;
+  rate_min?: number | null;
+  rate_max?: number | null;
+  hours_option?: string | null;
   apply_url: string;
   description: string | null;
   region: string;
@@ -124,7 +131,8 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     client_id: job.client_id || '',
     post_to_linkedin: job.post_to_linkedin ?? false,
   });
-  const [convertedRate, setConvertedRate] = useState<string | null>(null);
+  const { rate: phpRate } = useExchangeRate();
+  const [rateForm, setRateForm] = useState<RateFormValue>(rateFormFromJob(job));
   const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
 
@@ -241,29 +249,10 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     client_id: job.client_id || '',
         post_to_linkedin: job.post_to_linkedin ?? false,
       });
-      setConvertedRate(null);
+      setRateForm(rateFormFromJob(job));
     }
   }, [open, job]);
 
-  // Convert rate when region changes to Philippines or rate changes
-  useEffect(() => {
-    if (formData.region === 'philippines' && formData.rate) {
-      // Only convert if it looks like USD (not already in PHP)
-      if (formData.rate.startsWith('₱')) {
-        setConvertedRate(null); // Already in PHP
-      } else {
-        const hourlyRate = parseUsdHourlyRate(formData.rate);
-        if (hourlyRate) {
-          const { min, max } = calculatePhpMonthlyRange(hourlyRate);
-          setConvertedRate(formatPhpMonthlyRange(min, max));
-        } else {
-          setConvertedRate(null);
-        }
-      }
-    } else {
-      setConvertedRate(null);
-    }
-  }, [formData.region, formData.rate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,10 +269,12 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       return;
     }
 
-    // Use converted rate for Philippines region if available and rate looks like USD
-    const finalRate = formData.region === 'philippines' && convertedRate 
-      ? convertedRate 
-      : formData.rate || null;
+    const pay = buildJobPay(rateForm, formData.region, phpRate, job.rate_min == null ? job.rate : null);
+    if (!pay.ok) {
+      toast({ title: 'Validation Error', description: pay.error, variant: 'destructive' });
+      setIsLoading(false);
+      return;
+    }
 
     // Filter out empty qualifications and responsibilities
     const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
@@ -293,7 +284,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       .from('jobs')
       .update({
         title: formData.title,
-        rate: finalRate,
+        ...pay.value,
         description: formData.description || null,
         region: formData.region,
         qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
@@ -352,28 +343,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-rate">Rate (optional)</Label>
-            <Input
-              id="edit-rate"
-              value={formData.rate}
-              onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-              placeholder="e.g., $5/hour"
-            />
-            {formData.region === 'philippines' && formData.rate && !formData.rate.startsWith('₱') && (
-              <div className="text-sm text-muted-foreground">
-                {convertedRate ? (
-                  <span className="text-primary font-medium">
-                    Will be saved as: {convertedRate}
-                  </span>
-                ) : (
-                  <span className="text-destructive">
-                    Enter USD hourly rate (e.g., "$5/hour")
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+          <JobRateFields idPrefix="edit-rate" value={rateForm} onChange={setRateForm} region={formData.region} phpRate={phpRate} legacyRate={job.rate_min == null ? job.rate : null} />
 
           <div className="space-y-2">
             <Label htmlFor="edit-region">Region</Label>

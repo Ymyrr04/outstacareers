@@ -76,7 +76,7 @@ export default function JobRateFields({ idPrefix, value, onChange, region, phpRa
           </p>
         )}
         {!result.ok && hasInput && <p className="text-sm text-destructive">{result.error}</p>}
-        {region === 'philippines' && result.ok && result.value.rate && (
+        {region === 'philippines' && hasInput && result.ok && result.value.rate && (
           <p className="text-sm font-medium text-primary">Will be saved as: {result.value.rate}</p>
         )}
       </div>
