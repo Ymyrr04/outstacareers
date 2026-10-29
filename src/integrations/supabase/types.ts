@@ -3868,18 +3868,21 @@ export type Database = {
       }
       portal_announcement_reads: {
         Row: {
+          acknowledged: boolean
           announcement_id: string
           published_at: string
           read_at: string
           user_id: string
         }
         Insert: {
+          acknowledged?: boolean
           announcement_id: string
           published_at: string
           read_at?: string
           user_id?: string
         }
         Update: {
+          acknowledged?: boolean
           announcement_id?: string
           published_at?: string
           read_at?: string
@@ -3901,6 +3904,7 @@ export type Database = {
           created_at: string
           id: string
           published_at: string | null
+          requires_acknowledgement: boolean
           sample_at: string | null
           sample_user_id: string | null
           title: string
@@ -3911,6 +3915,7 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string | null
+          requires_acknowledgement?: boolean
           sample_at?: string | null
           sample_user_id?: string | null
           title: string
@@ -3921,6 +3926,7 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string | null
+          requires_acknowledgement?: boolean
           sample_at?: string | null
           sample_user_id?: string | null
           title?: string
