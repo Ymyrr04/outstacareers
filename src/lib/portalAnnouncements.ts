@@ -7,7 +7,10 @@ export function validateAnnouncementFile(file: { name: string; size: number; typ
   return null;
 }
 export type AnnouncementFile = { id: string; announcement_id: string; name: string; path: string; mime_type: string; size: number };
-export type PortalAnnouncement = { id: string; title: string; body_html: string; published_at: string | null; created_at: string; portal_announcement_files: AnnouncementFile[] };
+export type PortalAnnouncement = { id: string; title: string; body_html: string; published_at: string | null; sample_at?: string | null; sample_user_id?: string | null; created_at: string; portal_announcement_files: AnnouncementFile[] };
+export function announcementVersion(a: PortalAnnouncement) {
+  return a.published_at || a.sample_at || null;
+}
 export function unreadAnnouncements(items: PortalAnnouncement[], reads: { announcement_id: string; published_at: string }[]) {
-  return items.filter(a => a.published_at && !reads.some(r => r.announcement_id === a.id && r.published_at === a.published_at));
+  return items.filter(a => announcementVersion(a) && !reads.some(r => r.announcement_id === a.id && r.published_at === announcementVersion(a)));
 }
