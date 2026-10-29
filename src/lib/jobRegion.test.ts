@@ -22,9 +22,10 @@ describe('public job region visibility', () => {
     strictEqual(matchesPublicJobRegion({ region: 'latin-america' }, 'global'), false);
   });
 
-  it('does not place Global jobs in the regional tabs', () => {
-    strictEqual(matchesPublicJobRegion({ region: 'global' }, 'philippines'), false);
-    strictEqual(matchesPublicJobRegion({ region: 'global' }, 'latin-america'), false);
+  it('shows Global jobs in Philippines, Latin America and Global', () => {
+    strictEqual(matchesPublicJobRegion({ region: 'global' }, 'philippines'), true);
+    strictEqual(matchesPublicJobRegion({ region: 'global' }, 'latin-america'), true);
+    strictEqual(matchesPublicJobRegion({ region: 'global' }, 'global'), true);
   });
 
   it('preserves All Regions in the regional tabs without guessing missing regions', () => {
