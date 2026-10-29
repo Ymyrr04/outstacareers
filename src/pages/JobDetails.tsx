@@ -89,7 +89,7 @@ const JobDetails = () => {
 
   const getDisplayRate = (job: Job): string | null => {
     if (!job.rate) return null;
-    return convertToPhpMonthlyRange(job.rate, job.region);
+    return displayRateForRegion(job.rate, job.region);
   };
 
   if (loading) {
