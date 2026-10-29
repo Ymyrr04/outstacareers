@@ -2716,7 +2716,7 @@ const PortalDashboard = () => {
       </main>
 
       {/* Daily check-in reminder popup */}
-      {info && <PortalAnnouncements showList={false} />}
+      {info && <div className="max-w-[1600px] mx-auto px-3 sm:px-4"><PortalAnnouncements showList={tabValue === 'announcement'} /></div>}
       <Dialog open={reminderOpen} onOpenChange={(o) => { if (!o) dismissReminderForToday(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>

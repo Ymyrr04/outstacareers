@@ -36,7 +36,7 @@ export function AnnouncementManager() {
     const id = editing?.id || crypto.randomUUID();
     try {
       // Keep changes private until the message and every uploaded file are ready.
-      const { error } = await supabase.from('portal_announcements').upsert({ id, ...parsed.data, published_at: null });
+      const { error } = await supabase.from('portal_announcements').upsert({ id, title: parsed.data.title || '', body_html: parsed.data.body_html || '', published_at: null });
       if (error) throw error;
       for (const file of files) {
         const validation = validateAnnouncementFile(file); if (validation) throw new Error(validation);
