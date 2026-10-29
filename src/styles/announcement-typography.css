@@ -53,3 +53,24 @@
 }
 .announcement-typography pre { overflow-x: auto; white-space: pre; }
 .announcement-typography hr { border-color: hsl(var(--border)); margin: 1.5em 0; }
+
+/* Attachment button, shared by the editor preview and the contractor message. */
+button.announcement-attachment {
+  background-color: hsl(189 68% 42%);
+  border-color: hsl(189 68% 42%);
+  color: hsl(0 0% 100%);
+}
+button.announcement-attachment:hover:not([disabled]) {
+  background-color: hsl(190 60% 34%);
+  border-color: hsl(190 60% 34%);
+  color: hsl(0 0% 100%);
+}
+
+/* Attachment name rows in the editor, kept in the same teal highlight. */
+.announcement-attachment-name {
+  color: hsl(190 55% 28%);
+  font-weight: 600;
+}
+html.dark .announcement-attachment-name {
+  color: hsl(189 68% 60%);
+}
