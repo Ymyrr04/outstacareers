@@ -56,18 +56,18 @@
 
 /* Attachment button, shared by the editor preview and the contractor message. */
 button.announcement-attachment {
-  background-color: hsl(var(--brand));
-  border-color: hsl(var(--brand));
+  background-color: hsl(var(--brand, 189 68% 42%));
+  border-color: hsl(var(--brand, 189 68% 42%));
   color: hsl(0 0% 100%);
 }
 button.announcement-attachment:hover:not([disabled]) {
-  background-color: hsl(var(--brand-dark));
-  border-color: hsl(var(--brand-dark));
+  background-color: hsl(var(--brand-dark, 190 60% 34%));
+  border-color: hsl(var(--brand-dark, 190 60% 34%));
   color: hsl(0 0% 100%);
 }
 
 /* Attachment name rows in the editor, kept in the same teal highlight. */
 .announcement-attachment-name {
-  color: hsl(var(--brand-text));
+  color: hsl(var(--brand-text, 190 55% 28%));
   font-weight: 600;
 }
