@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TextSelection } from '@tiptap/pm/state';
 import { useState, useEffect, useCallback } from 'react';
+import type { Extensions } from '@tiptap/core';
 
 interface WysiwygEditorProps {
   value: string;
@@ -19,6 +20,7 @@ interface WysiwygEditorProps {
   autoFocus?: boolean;
   onReady?: (editor: Editor) => void;
   preservePasteFormatting?: boolean;
+  extensions?: Extensions;
 }
 
 export function WysiwygEditor({
@@ -30,6 +32,7 @@ export function WysiwygEditor({
   autoFocus = false,
   onReady,
   preservePasteFormatting = false,
+  extensions = [],
 }: WysiwygEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
@@ -37,6 +40,7 @@ export function WysiwygEditor({
 
   const editor = useEditor({
     extensions: [
+      ...extensions,
       StarterKit.configure({
         link: false,
         underline: false,

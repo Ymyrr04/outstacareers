@@ -1,4 +1,5 @@
 import { WysiwygEditor } from '@/components/WysiwygEditor';
+import type { Editor, Extensions } from '@tiptap/core';
 
 interface NotesEditorProps {
   value: string;
@@ -8,6 +9,8 @@ interface NotesEditorProps {
   minHeight?: string;
   autoFocus?: boolean;
   preservePasteFormatting?: boolean;
+  extensions?: Extensions;
+  onReady?: (editor: Editor) => void;
 }
 
 export function NotesEditor({ 
@@ -18,6 +21,8 @@ export function NotesEditor({
   minHeight = "100px",
   autoFocus = false,
   preservePasteFormatting = false,
+  extensions,
+  onReady,
 }: NotesEditorProps) {
   return (
     <WysiwygEditor
@@ -28,6 +33,8 @@ export function NotesEditor({
       minHeight={minHeight}
       autoFocus={autoFocus}
       preservePasteFormatting={preservePasteFormatting}
+      extensions={extensions}
+      onReady={onReady}
     />
   );
 }
