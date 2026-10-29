@@ -1,0 +1,55 @@
+/* Shared by the newsletter editor, draft preview and contractor message. */
+.announcement-typography {
+  color: hsl(var(--foreground));
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.announcement-typography p {
+  margin: 0 0 0.85em;
+}
+.announcement-typography p:empty {
+  min-height: 1.7em;
+}
+.announcement-typography > :first-child { margin-top: 0; }
+.announcement-typography > :last-child { margin-bottom: 0; }
+.announcement-typography strong { color: inherit; font-weight: 700; }
+.announcement-typography a { color: hsl(var(--primary)); text-decoration: underline; }
+.announcement-typography ul,
+.announcement-typography ol { margin: 0.85em 0; padding-left: 1.5em; }
+.announcement-typography ul { list-style-type: disc; }
+.announcement-typography ol { list-style-type: decimal; }
+.announcement-typography li { margin: 0.35em 0; }
+.announcement-typography li p { margin: 0; }
+.announcement-typography img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.25em 0;
+}
+.announcement-typography h1,
+.announcement-typography h2,
+.announcement-typography h3,
+.announcement-typography h4,
+.announcement-typography h5,
+.announcement-typography h6 {
+  color: inherit;
+  line-height: 1.35;
+  font-weight: 700;
+  margin: 1.5em 0 0.65em;
+}
+.announcement-typography h1 { font-size: 1.75em; }
+.announcement-typography h2 { font-size: 1.5em; }
+.announcement-typography h3 { font-size: 1.25em; }
+.announcement-typography h4,
+.announcement-typography h5,
+.announcement-typography h6 { font-size: 1em; }
+.announcement-typography blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1em;
+  margin: 1em 0;
+}
+.announcement-typography pre { overflow-x: auto; white-space: pre; }
+.announcement-typography hr { border-color: hsl(var(--border)); margin: 1.5em 0; }

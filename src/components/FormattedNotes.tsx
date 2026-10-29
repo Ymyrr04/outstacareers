@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import DOMPurify from 'dompurify';
+import '@/styles/announcement-typography.css';
 
 interface FormattedNotesProps {
   content: string;
@@ -70,7 +71,7 @@ export function FormattedNotes({ content, className = '', preserveFormatting = f
 
   return (
     <div 
-      className={`text-sm text-foreground prose prose-sm max-w-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_a]:text-primary [&_a]:hover:underline ${preserveFormatting ? 'whitespace-pre-wrap break-words [&_p:empty]:min-h-[1.25em] [&_strong]:font-bold' : ''} ${className}`}
+      className={`${preserveFormatting ? 'announcement-typography max-w-none' : 'text-sm text-foreground prose prose-sm max-w-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_a]:text-primary [&_a]:hover:underline'} ${className}`}
       dangerouslySetInnerHTML={{ __html: formattedHtml }}
     />
   );

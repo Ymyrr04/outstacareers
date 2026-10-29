@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { TextSelection } from '@tiptap/pm/state';
 import { useState, useEffect, useCallback } from 'react';
 import type { Extensions } from '@tiptap/core';
+import '@/styles/announcement-typography.css';
 
 interface WysiwygEditorProps {
   value: string;
@@ -74,7 +75,7 @@ export function WysiwygEditor({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none px-3 py-2',
+        class: `${preservePasteFormatting ? 'announcement-typography' : 'prose prose-sm'} max-w-none focus:outline-none px-3 py-2`,
         style: `min-height: ${minHeight}`,
       },
       handleDOMEvents: {
@@ -379,7 +380,7 @@ export function WysiwygEditor({
       >
         <EditorContent 
           editor={editor} 
-          className="[&_.ProseMirror]:min-h-[100px] [&_.ProseMirror]:p-3 [&_.ProseMirror_p]:my-1 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_li]:my-0.5"
+          className={`[&_.ProseMirror]:min-h-[100px] [&_.ProseMirror]:p-3 ${preservePasteFormatting ? '' : '[&_.ProseMirror_p]:my-1 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_li]:my-0.5'}`}
           style={{ minHeight }}
         />
       </div>
