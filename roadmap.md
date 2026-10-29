@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Add admin contractor announcements with text, images and attachments, login pop-up and retained portal announcements; real draft save/readback and file preview verified, four tests passed, build clean. Contractor login pop-up not browser-verified with a contractor session.
 - [x] Add per-client weekly timesheet email scheduling in Portal Options; real save/reload verified and restored, live no-send digest grouped four real timesheets for one recipient, unauthenticated requests rejected, four tests and build clean; scheduled delivery runs every 30 minutes, actual mailbox receipt untested.
 - [x] Delay rendering portal deactivation by one daily run (24 hours), preserving end dates; deployed and three cutoff tests passed. Michelle Polenio already has no portal account, so her final submission could not be verified.
 - [x] Add Rate and Time zone above Client Overview for new and saved profiles; verified save/reload with writes intercepted and four tests; fixed the client panel accessibility warning.

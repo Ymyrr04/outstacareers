@@ -1,0 +1,87 @@
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { NotesEditor } from '@/components/NotesEditor';
+import { AnnouncementContent } from '@/components/portal/AnnouncementContent';
+import { announcementSchema, announcementFileTypes, validateAnnouncementFile, type PortalAnnouncement } from '@/lib/portalAnnouncements';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Paperclip, Pencil, Eye, Send, X, Loader2 } from 'lucide-react';
+
+export function AnnouncementManager() {
+  const [items, setItems] = useState<PortalAnnouncement[]>([]);
+  const [editing, setEditing] = useState<PortalAnnouncement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [removed, setRemoved] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<PortalAnnouncement | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const load = async () => {
+    const { data, error } = await supabase.from('portal_announcements').select('*, portal_announcement_files(*)').order('created_at', { ascending: false });
+    if (error) toast({ title: 'Announcements could not be loaded', variant: 'destructive' });
+    else setItems(data || []);
+  };
+  useEffect(() => { void load(); }, []);
+  const edit = (a: PortalAnnouncement | null) => { setEditing(a); setTitle(a?.title || ''); setBody(a?.body_html || ''); setFiles([]); setRemoved([]); setOpen(true); };
+  const save = async (publish: boolean) => {
+    const parsed = announcementSchema.safeParse({ title, body_html: body });
+    if (!parsed.success) { toast({ title: 'Add a subject (up to 200 characters) and a valid message.', variant: 'destructive' }); return; }
+    setBusy(true);
+    const id = editing?.id || crypto.randomUUID();
+    try {
+      // Keep changes private until the message and every uploaded file are ready.
+      const { error } = await supabase.from('portal_announcements').upsert({ id, title: parsed.data.title || '', body_html: parsed.data.body_html || '', published_at: null });
+      if (error) throw error;
+      for (const file of files) {
+        const validation = validateAnnouncementFile(file); if (validation) throw new Error(validation);
+        const path = `${id}/${crypto.randomUUID()}/${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const { error: uploadError } = await supabase.storage.from('portal-announcements').upload(path, file, { contentType: file.type });
+        if (uploadError) throw uploadError;
+        const { error: fileError } = await supabase.from('portal_announcement_files').insert({ announcement_id: id, name: file.name, path, mime_type: file.type, size: file.size });
+        if (fileError) { await supabase.storage.from('portal-announcements').remove([path]); throw fileError; }
+      }
+      if (removed.length) {
+        const { error } = await supabase.from('portal_announcement_files').delete().in('id', removed); if (error) throw error;
+        const paths = editing?.portal_announcement_files.filter(f => removed.includes(f.id)).map(f => f.path) || [];
+        if (paths.length) await supabase.storage.from('portal-announcements').remove(paths);
+      }
+      if (publish) { const { error } = await supabase.from('portal_announcements').update({ published_at: new Date().toISOString() }).eq('id', id); if (error) throw error; }
+      setOpen(false); await load(); toast({ title: publish ? 'Announcement published to contractor portals' : 'Draft saved' });
+    } catch (e) {
+      setOpen(false); await load(); toast({ title: 'Announcement remains a draft', description: e instanceof Error ? e.message : 'Please reopen it and try again.', variant: 'destructive' });
+    } finally { setBusy(false); }
+  };
+  const unpublish = async (a: PortalAnnouncement) => {
+    setBusy(true);
+    const { error } = await supabase.from('portal_announcements').update({ published_at: null }).eq('id', a.id);
+    if (error) toast({ title: 'Could not unpublish', variant: 'destructive' }); else await load();
+    setBusy(false);
+  };
+  return <section className="space-y-4 py-4">
+    <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">Portal announcements</h2><Button onClick={() => edit(null)}><Plus className="h-4 w-4 mr-2" />Add announcement</Button></div>
+    {!items.length && <p className="text-sm text-muted-foreground">No announcements added.</p>}
+    {items.map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-3">
+      <div className="min-w-0"><h3 className="font-medium break-words">{a.title}</h3><p className="text-xs text-muted-foreground">{a.published_at ? `Published · ${new Date(a.published_at).toLocaleDateString()}` : 'Draft'}</p></div>
+      <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => setPreview(a)}><Eye className="h-4 w-4 mr-2" />Preview</Button><Button variant="outline" size="sm" disabled={busy} onClick={() => edit(a)}><Pencil className="h-4 w-4 mr-2" />Edit</Button>{a.published_at && <Button variant="outline" size="sm" disabled={busy} onClick={() => unpublish(a)}>Unpublish</Button>}</div>
+    </div>)}
+    <Dialog open={open} onOpenChange={v => { if (!busy) setOpen(v); }}><DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editing ? 'Edit announcement' : 'Add announcement'}</DialogTitle><DialogDescription>Contractor portal announcement</DialogDescription></DialogHeader>
+      <div className="space-y-2"><Label htmlFor="announcement-title">Subject</Label><Input id="announcement-title" maxLength={200} value={title} onChange={e => setTitle(e.target.value)} disabled={busy} /></div>
+      <Label>Message</Label><NotesEditor value={body} onChange={setBody} minHeight="180px" disabled={busy} />
+      <input ref={input} type="file" multiple accept={announcementFileTypes.join(',')} className="hidden" onChange={e => {
+        const chosen = Array.from(e.target.files || []); const invalid = chosen.map(validateAnnouncementFile).find(Boolean);
+        if (invalid) toast({ title: invalid, variant: 'destructive' }); else setFiles(prev => [...prev, ...chosen]); e.target.value = '';
+      }} />
+      <Button variant="outline" disabled={busy} onClick={() => input.current?.click()}><Paperclip className="h-4 w-4 mr-2" />Add images or attachments</Button>
+      {editing?.portal_announcement_files.filter(f => !removed.includes(f.id)).map(f => <div key={f.id} className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{f.name}</span><Button variant="ghost" size="icon" disabled={busy} aria-label={`Remove ${f.name}`} onClick={() => setRemoved(p => [...p, f.id])}><X className="h-4 w-4" /></Button></div>)}
+      {files.map((f, i) => <div key={i} className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{f.name}</span><Button variant="ghost" size="icon" disabled={busy} aria-label={`Remove ${f.name}`} onClick={() => setFiles(p => p.filter((_, j) => i !== j))}><X className="h-4 w-4" /></Button></div>)}
+      <div className="flex flex-wrap justify-end gap-2"><Button variant="ghost" disabled={busy} onClick={() => setOpen(false)}>Cancel</Button><Button variant="outline" disabled={busy} onClick={() => save(false)}>Save draft</Button><Button disabled={busy} onClick={() => save(true)}>{busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}Publish announcement</Button></div>
+    </DialogContent></Dialog>
+    <Dialog open={!!preview} onOpenChange={v => { if (!v) setPreview(null); }}><DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{preview?.title}</DialogTitle><DialogDescription>Announcement preview</DialogDescription></DialogHeader>{preview && <AnnouncementContent announcement={preview} />}</DialogContent></Dialog>
+  </section>;
+}

@@ -3831,6 +3831,97 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_announcement_files: {
+        Row: {
+          announcement_id: string
+          id: string
+          mime_type: string
+          name: string
+          path: string
+          size: number
+        }
+        Insert: {
+          announcement_id: string
+          id?: string
+          mime_type: string
+          name: string
+          path: string
+          size: number
+        }
+        Update: {
+          announcement_id?: string
+          id?: string
+          mime_type?: string
+          name?: string
+          path?: string
+          size?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_announcement_files_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "portal_announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_announcement_reads: {
+        Row: {
+          announcement_id: string
+          published_at: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          published_at: string
+          read_at?: string
+          user_id?: string
+        }
+        Update: {
+          announcement_id?: string
+          published_at?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "portal_announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_announcements: {
+        Row: {
+          body_html: string
+          created_at: string
+          id: string
+          published_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body_html?: string
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rag_chat_logs: {
         Row: {
           admin_user_id: string | null
