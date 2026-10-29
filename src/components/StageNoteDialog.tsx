@@ -17,7 +17,7 @@ import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Loader2, Save, CalendarPlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
-import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
+import { EVENT_TYPES, inputToMinutes, todayET, autoEndTime } from '@/lib/calendarTime';
 import { defaultsToCalendarOnMove } from '@/lib/stageNoteCalendar';
 
 function escapeNoteText(value: string) {

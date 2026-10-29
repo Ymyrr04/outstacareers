@@ -13,7 +13,7 @@ import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Loader2, CalendarPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
-import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
+import { EVENT_TYPES, inputToMinutes, todayET, autoEndTime } from '@/lib/calendarTime';
 
 interface Props {
   open: boolean;
