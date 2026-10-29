@@ -9,42 +9,8 @@ import { toast } from "sonner";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { matchesPublicJobRegion } from "@/lib/jobRegion";
-// Fixed conversion values for Philippines
-const USD_TO_PHP_RATE = 56;
-const WEEKS_PER_MONTH = 4;
-const MIN_HOURS_PER_WEEK = 40;
-const MAX_HOURS_PER_WEEK = 50;
-
-// Helper function to parse USD hourly rate
-const parseUsdHourlyRate = (rate: string): number | null => {
-  // Skip if already in PHP
-  if (rate.startsWith('₱')) return null;
-  
-  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
-  if (!match) return null;
-  
-  const amount = parseFloat(match[1].replace(/,/g, ''));
-  const period = match[2]?.toLowerCase() || '';
-  
-  // Only convert hourly rates
-  if (period && period !== 'hour' && period !== 'hr') return null;
-  
-  return amount;
-};
-
-// Helper function to convert USD hourly rate to PHP monthly range
-const convertToPhpMonthlyRange = (rate: string): string => {
-  const hourlyRate = parseUsdHourlyRate(rate);
-  if (!hourlyRate) return rate; // Return original if can't parse
-  
-  const minMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  const maxMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  
-  const formattedMin = minMonthly.toLocaleString('en-PH');
-  const formattedMax = maxMonthly.toLocaleString('en-PH');
-  
-  return `₱${formattedMin} - ₱${formattedMax}/month`;
-};
+import { displayJobRate, formatHours } from "@/lib/jobRate";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 // Static fallback jobs for when database is empty
 const staticJobs: Job[] = [
@@ -273,16 +239,10 @@ const JobsSection = () => {
   const displayedJobs = jobs.filter(job => matchesPublicJobRegion(job, selectedRegion));
 
   // Get the display rate based on selected region
-  const getDisplayRate = (job: Job): string | null => {
-    if (!job.rate) return null;
-    
-    // Convert to PHP monthly range when viewing Philippines section
-    if (selectedRegion === 'philippines') {
-      return convertToPhpMonthlyRange(job.rate);
-    }
-    
-    return job.rate;
-  };
+  const { rate: phpRate } = useExchangeRate();
+  // Pesos are shown when viewing the Philippines section
+  const getDisplayRate = (job: Job): string | null =>
+    displayJobRate(job, selectedRegion === 'philippines', phpRate);
 
   const JobCard = ({ job, index }: { job: Job; index: number }) => {
     const displayRate = getDisplayRate(job);
@@ -355,6 +315,7 @@ const JobsSection = () => {
                   {displayRate}
                 </p>
               )}
+              {formatHours(job.hours_option) && (<p className="text-sm text-muted-foreground text-center -mt-2">{formatHours(job.hours_option)}</p>)}
               
               {/* Remote & Full time - opposite sides */}
               <div className="flex items-center justify-between text-sm text-muted-foreground">

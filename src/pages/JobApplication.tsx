@@ -3,41 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Job } from "@/hooks/useJobs";
+import { displayJobRate, formatHours } from "@/lib/jobRate";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import PreScreeningForm from "@/components/PreScreeningForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, ArrowLeft, Loader2, Building2 } from "lucide-react";
 
-// Fixed conversion values for Philippines
-const USD_TO_PHP_RATE = 56;
-const WEEKS_PER_MONTH = 4;
-const MIN_HOURS_PER_WEEK = 40;
-const MAX_HOURS_PER_WEEK = 50;
-
-const parseUsdHourlyRate = (rate: string): number | null => {
-  if (rate.startsWith('₱')) return null;
-  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
-  if (!match) return null;
-  const amount = parseFloat(match[1].replace(/,/g, ''));
-  const period = match[2]?.toLowerCase() || '';
-  if (period && period !== 'hour' && period !== 'hr') return null;
-  return amount;
-};
-
-const convertToPhpMonthlyRange = (rate: string): string => {
-  const hourlyRate = parseUsdHourlyRate(rate);
-  if (!hourlyRate) return rate;
-  const minMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  const maxMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
-  const formattedMin = minMonthly.toLocaleString('en-PH');
-  const formattedMax = maxMonthly.toLocaleString('en-PH');
-  return `₱${formattedMin} - ₱${formattedMax}/month`;
-};
 
 const JobApplication = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const [job, setJob] = useState<Job | null>(null);
+  const { rate: phpRate } = useExchangeRate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(true);
@@ -70,14 +48,9 @@ const JobApplication = () => {
     fetchJob();
   }, [jobId]);
 
-  const getDisplayRate = (job: Job): string | null => {
-    if (!job.rate) return null;
-    // Default to PHP conversion for direct links
-    if (job.region === 'philippines' || !job.region) {
-      return convertToPhpMonthlyRange(job.rate);
-    }
-    return job.rate;
-  };
+  // Pesos are shown for Philippines jobs and jobs with no region (direct links)
+  const getDisplayRate = (job: Job): string | null =>
+    displayJobRate(job, job.region === 'philippines' || !job.region, phpRate);
 
   if (loading) {
     return (
@@ -162,7 +135,7 @@ const JobApplication = () => {
                   {displayRate && (
                     <div className="text-right">
                       <p className="text-lg font-bold text-primary">{displayRate}</p>
-                      <p className="text-xs text-muted-foreground">Full-time</p>
+                      <p className="text-xs text-muted-foreground">Full-time{formatHours(job.hours_option) ? ` · ${formatHours(job.hours_option)}` : ""}</p>
                     </div>
                   )}
                 </div>

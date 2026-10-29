@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 const expect = (v: unknown) => ({ toBe: (e: unknown) => assert.strictEqual(v, e), toEqual: (e: unknown) => assert.deepStrictEqual(v, e) });
-import { buildJobPay, formatUsdRate, formatHours, computePhpMonthly, formatPhpMonthly, usesPhpConversion } from './jobRate';
+import { displayJobRate, buildJobPay, formatUsdRate, formatHours, computePhpMonthly, formatPhpMonthly, usesPhpConversion } from './jobRate';
 
 describe('jobRate', () => {
   it('formats fixed and range USD rates', () => {
@@ -44,5 +44,18 @@ describe('buildJobPay', () => {
     const r = buildJobPay(v({}), 'global', 56, '$7/hr');
     expect(r.ok && r.value.rate).toBe('$7/hr');
     expect(r.ok && r.value.rate_min).toBe(null);
+  });
+});
+
+describe('displayJobRate', () => {
+  it('structured: USD when not peso, live peso with hours when peso', () => {
+    const j = { rate_type: 'range', rate_min: 4, rate_max: 6, hours_option: '40', rate: 'x' };
+    expect(displayJobRate(j, false, 64)).toBe('$4–$6/hour');
+    expect(displayJobRate(j, true, 64)).toBe('₱41,000 - ₱61,400/month');
+  });
+  it('legacy: text unchanged, USD converts with 40–50 hours', () => {
+    expect(displayJobRate({ rate: '$5/hour' }, false, 64)).toBe('$5/hour');
+    expect(displayJobRate({ rate: '$5/hour' }, true, 56)).toBe('₱44,800 - ₱56,000/month');
+    expect(displayJobRate({ rate: '₱30,000/month' }, true, 64)).toBe('₱30,000/month');
   });
 });
