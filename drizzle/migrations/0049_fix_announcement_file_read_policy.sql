@@ -1,0 +1,2 @@
+DROP POLICY announcement_storage_read ON storage.objects;
+CREATE POLICY announcement_storage_read ON storage.objects FOR SELECT TO authenticated USING (bucket_id='portal-announcements' AND EXISTS (SELECT 1 FROM public.portal_announcement_files f JOIN public.portal_announcements a ON a.id=f.announcement_id WHERE f.path=storage.objects.name AND a.published_at IS NOT NULL) AND EXISTS (SELECT 1 FROM public.contractor_portal_users WHERE user_id=auth.uid() AND disabled_at IS NULL));
