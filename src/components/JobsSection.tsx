@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Eye, Link2, Check } from "lucide-react";
-import { generateJobUrl } from "@/lib/slugify";
 import { toast } from "sonner";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -272,7 +271,7 @@ const JobsSection = () => {
       
       // Use the production URL for shareable links
       const productionOrigin = 'https://outstahub.com';
-      const jobUrl = `${productionOrigin}${generateJobUrl(job.title, job.id)}`;
+      const jobUrl = `${productionOrigin}/job/${job.id}`;
       
       try {
         await navigator.clipboard.writeText(jobUrl);
