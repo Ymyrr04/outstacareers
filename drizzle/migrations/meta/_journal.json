@@ -379,6 +379,13 @@
       "when": 1793308243705,
       "tag": "0053_job_pay_fields_exchange_rates",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793376004244,
+      "tag": "0054_job_post_countries",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { buildJobPost } from './jobPostFormats';
+import { buildJobPost, countryPayRate } from './jobPostFormats';
 
 const job = {
   id: 'abc-123',
@@ -51,5 +51,21 @@ describe('buildJobPost', () => {
     assert.ok(!text.includes('Work Hours'));
     assert.ok(text.includes('Rate: Competitive compensation'));
     assert.ok(html && html.includes('<ul>') && !html.includes('Key Responsibilities'));
+  });
+});
+
+describe('countryPayRate (Indeed country selector)', () => {
+  const base = { id: 'x', title: 'T', rate_type: 'fixed', rate_min: 5, rate_max: 5, hours_option: '40-50', region: 'latam' };
+  it('COP over 1,000/USD rounds to nearest 10,000 with code prefix', () => {
+    assert.strictEqual(countryPayRate(base, { currency: 'COP', symbol: null, perUsd: 4012.3 }), 'COP 3,210,000 - COP 4,010,000/month');
+  });
+  it('MXN rounds to nearest 100', () => {
+    assert.strictEqual(countryPayRate(base, { currency: 'MXN', perUsd: 18.37 }), 'MXN 14,700 - MXN 18,400/month');
+  });
+  it('no hours shows USD hourly', () => {
+    assert.strictEqual(countryPayRate({ ...base, hours_option: null }, { currency: 'MXN', perUsd: 18 }), '$5/hour');
+  });
+  it('Philippines matches the existing peso output regardless of job region', () => {
+    assert.strictEqual(countryPayRate(base, { currency: 'PHP', symbol: '₱', perUsd: 56 }), '₱44,800 - ₱56,000/month');
   });
 });
