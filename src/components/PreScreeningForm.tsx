@@ -290,9 +290,6 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
         const pdfjs: any = (await import('@/lib/pdfjs')).default;
 
         
-        // Set up worker using the legacy build for better compatibility
-        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
         console.log('Loading PDF document...');
         const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
