@@ -40,7 +40,7 @@ function buildPostText(job: any): string {
     lines.push('');
   }
 
-  const applyUrl = job.apply_url || `https://outstahub.com/jobs/${job.id}`;
+  const applyUrl = job.apply_url || `https://outstahub.com/job/${job.id}`;
   lines.push(`Apply here: ${applyUrl}`);
   lines.push('');
   lines.push('#hiring #remotejobs #OutSta');
