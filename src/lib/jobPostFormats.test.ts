@@ -52,6 +52,14 @@ describe('buildJobPost', () => {
     assert.ok(text.includes('Rate: Competitive compensation'));
     assert.ok(html && html.includes('<ul>') && !html.includes('Key Responsibilities'));
   });
+
+  it('bolds the detail labels in the Indeed HTML', () => {
+    const { html } = buildJobPost('indeed', { ...job, workHours: '8am - 5pm EST' } as never, { workHours: '8am - 5pm EST' });
+    assert.ok(html && html.includes('<strong>Work Arrangement:</strong>'));
+    assert.ok(html && html.includes('<strong>Rate:</strong>'));
+    assert.ok(html && html.includes('<strong>Work Hours:</strong> 8am - 5pm EST'));
+    assert.ok(html && html.includes('<strong>Location:</strong> Remote'));
+  });
 });
 
 describe('countryPayRate (Indeed country selector)', () => {
