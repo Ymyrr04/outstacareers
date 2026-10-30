@@ -315,17 +315,22 @@ const JobsSection = () => {
                   {displayRate}
                 </p>
               )}
-              {formatHours(job.hours_option) && (<p className="text-sm text-muted-foreground text-center -mt-2">{formatHours(job.hours_option)}</p>)}
-              
-              {/* Remote & Full time - opposite sides */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              {/* Full time · hours · Remote - single line */}
+              <div className="flex items-center justify-center text-sm text-muted-foreground space-x-1">
+                <span>Full time</span>
+                {formatHours(job.hours_option) && (
+                  <>
+                    <span>·</span>
+                    <span>{formatHours(job.hours_option)}</span>
+                  </>
+                )}
+                <span>·</span>
                 <div className="flex items-center space-x-1">
                   <MapPin className={`w-4 h-4 transition-colors duration-300 ${
                     isHovered ? 'text-primary' : ''
                   }`} />
                   <span>Remote</span>
                 </div>
-                <span>Full time</span>
               </div>
             </CardContent>
           </div>

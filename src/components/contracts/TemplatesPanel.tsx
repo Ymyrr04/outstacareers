@@ -48,8 +48,8 @@ export const TemplatesPanel = () => {
     setUploading(true);
     try {
       // Count pages with pdfjs
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      const pdfjsLib = (await import("@/lib/pdfjs")).default;
+
       const buf = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
       const pageCount = pdf.numPages;
