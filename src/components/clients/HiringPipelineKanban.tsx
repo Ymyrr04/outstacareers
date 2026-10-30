@@ -23,6 +23,7 @@ const ADMIN_AVATARS: Record<string, string> = {
   'eduardo@outsta.io': eduardoAvatar,
   'mark@outsta.io': markAvatar,
   'liezl@outsta.io': liezlAvatar,
+  'christian@outsta.io': getAdminAvatar('christian@outsta.io') ?? '',
 };
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, MessageCircle, Check, Download, Upload, ArrowUpDown, Search, X } from 'lucide-react';
@@ -167,7 +168,8 @@ const getIndustryClass = (industry: string | null): string => {
   if (!industry) return 'bg-muted text-muted-foreground';
   return INDUSTRY_COLORS[industry] || 'bg-muted text-muted-foreground';
 };
-import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
+import { CLIENT_RECRUITER_EMAILS, countClientRecruiterAssignments } from '@/lib/clientRecruiterAssignments';
 import { parseDateOnly } from '@/lib/dateOnly';
 
 interface KanbanCardProps {
@@ -551,29 +553,12 @@ export const HiringPipelineKanban = () => {
   // Calculate role counts per recruiter (only active hiring stages: sourcing, pitch, scheduled-interview)
   // MUST be before any early returns to maintain hook order
   const recruiterStats = useMemo(() => {
-    const activeStages = ['sourcing', 'pitch', 'scheduled_interview'];
-    const activeRequests = requests.filter(r => activeStages.includes(r.pipeline_stage));
-    const stats: Record<string, { name: string; count: number; avatar?: string }> = {};
-    
-    // Key recruiters to always show
-    const keyRecruiters = ['czarina@outsta.io', 'kristine@outsta.io', 'eduardo@outsta.io'];
-    keyRecruiters.forEach(email => {
-      stats[email] = { 
-        name: email === 'czarina@outsta.io' ? 'Cza' : email === 'kristine@outsta.io' ? 'Kristine' : 'Eduardo',
-        count: 0,
-        avatar: ADMIN_AVATARS[email]
-      };
-    });
-    
-    activeRequests.forEach(r => {
-      const admin = adminUsers.find(a => a.user_id === r.assigned_admin_id);
-      const email = admin?.email?.toLowerCase();
-      if (email && keyRecruiters.includes(email)) {
-        stats[email].count++;
-      }
-    });
-    
-    return Object.values(stats);
+    const counts = countClientRecruiterAssignments(requests, adminUsers);
+    return CLIENT_RECRUITER_EMAILS.map(email => ({
+      name: email === 'czarina@outsta.io' ? 'Cza' : getAdminDisplayName(email),
+      count: counts[email],
+      avatar: ADMIN_AVATARS[email],
+    }));
   }, [requests, adminUsers]);
 
   const openExportDialog = () => {

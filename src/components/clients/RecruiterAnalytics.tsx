@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { type HiringRequest } from '@/hooks/useHiringRequests';
+import { getAdminAvatar } from '@/lib/adminDisplayNames';
+import { CLIENT_RECRUITER_EMAILS } from '@/lib/clientRecruiterAssignments';
 
 import czaAvatar from '@/assets/team/cza.png';
 import kristineAvatar from '@/assets/team/kristine.png';
@@ -22,6 +24,7 @@ const ADMIN_AVATARS: Record<string, string> = {
   'eduardo@outsta.io': eduardoAvatar,
   'mark@outsta.io': markAvatar,
   'liezl@outsta.io': liezlAvatar,
+  'christian@outsta.io': getAdminAvatar('christian@outsta.io') ?? '',
 };
 
 const ADMIN_NAMES: Record<string, string> = {
@@ -30,6 +33,7 @@ const ADMIN_NAMES: Record<string, string> = {
   'eduardo@outsta.io': 'Eduardo',
   'mark@outsta.io': 'Mark',
   'liezl@outsta.io': 'Liezl',
+  'christian@outsta.io': 'Christian',
 };
 
 interface AdminUser {
@@ -72,7 +76,7 @@ export const RecruiterAnalytics = ({ requests, adminUsers }: RecruiterAnalyticsP
     const stats: Record<string, RecruiterStats> = {};
     
     // Initialize with known recruiters (Mark and Liezl excluded from display)
-    const keyRecruiters = ['czarina@outsta.io', 'kristine@outsta.io', 'eduardo@outsta.io'];
+    const keyRecruiters = CLIENT_RECRUITER_EMAILS;
     keyRecruiters.forEach(email => {
       stats[email] = {
         email,

@@ -40,6 +40,7 @@ const ADMIN_AVATARS: Record<string, string> = {
   'eduardo@outsta.io': eduardoAvatar,
   'mark@outsta.io': markAvatar,
   'liezl@outsta.io': liezlAvatar,
+  'christian@outsta.io': getAdminAvatar('christian@outsta.io') ?? '',
 };
 
 interface HiringRequestDetailDialogProps {
