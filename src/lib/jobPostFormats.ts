@@ -175,7 +175,7 @@ function indeedHtml(p: Parts): string {
   if (p.rateNote) details.push(p.rateNote);
   if (p.workHours) details.push(`<strong>Work Hours:</strong> ${esc(p.workHours)}`);
   details.push('<strong>Location:</strong> Remote');
-  out.push(`<p>${details.map(esc).join('<br>')}</p>`);
+  out.push(`<p>${details.join('<br>')}</p>`);
   return out.join('\n');
 }
 
