@@ -33,3 +33,4 @@
 - Start pipeline lasso selection only for targets physically inside its column and outside editable controls; React portal events from candidate dialogs otherwise cancel native text selection.
 - Prepare private announcement attachments as authenticated blobs before enabling download, so clicks save locally or open a mobile share sheet instead of navigating to an external file page.
 - Persist optional must-read acknowledgements in versioned announcement reads and enforce explicit confirmation in read policies; suppress all dismiss gestures for mandatory messages until confirmation saves, without altering the separate payment notice.
+- Import PDF.js only through `src/lib/pdfjs.ts` (default export), never `import * as pdfjsLib from "pdfjs-dist"`; the dev-server CJS interop hides named exports there and a namespace import crashes the whole app at startup.
