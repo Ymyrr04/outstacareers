@@ -315,8 +315,8 @@ const JobsSection = () => {
                   {displayRate}
                 </p>
               )}
-              {/* Full time · hours on the left, Remote on the right */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              {/* Full time · hours on the left, Remote on the right - azure */}
+              <div className="flex items-center justify-between text-sm text-primary">
                 <div className="flex items-center space-x-1">
                   <span>Full time</span>
                   {formatHours(job.hours_option) && (
@@ -327,9 +327,7 @@ const JobsSection = () => {
                   )}
                 </div>
                 <div className="flex items-center space-x-1">
-                  <MapPin className={`w-4 h-4 transition-colors duration-300 ${
-                    isHovered ? 'text-primary' : ''
-                  }`} />
+                  <MapPin className="w-4 h-4" />
                   <span>Remote</span>
                 </div>
               </div>
