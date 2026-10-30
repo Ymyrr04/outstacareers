@@ -35,7 +35,6 @@ import MyCalendarDialog from '@/components/calendar/MyCalendarDialog';
 import { useActivityReminders } from '@/hooks/useActivityReminders';
 import { SalesPipeline } from '@/components/sales/SalesPipeline';
 import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
-import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
