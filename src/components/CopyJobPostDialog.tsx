@@ -31,11 +31,12 @@ const DEFAULT_COUNTRIES: Country[] = [
 ];
 const FIXED = DEFAULT_COUNTRIES.map((c) => c.country);
 const ADD = '__add__';
+const USD: Country = { country: 'USD – no conversion', currency: 'USD', symbol: '$' };
 
 function orderCountries(rows: Country[]): Country[] {
   const fixed = FIXED.map((n) => rows.find((r) => r.country === n) ?? DEFAULT_COUNTRIES.find((d) => d.country === n)!);
   const extra = rows.filter((r) => !FIXED.includes(r.country)).sort((a, b) => a.country.localeCompare(b.country));
-  return [...fixed, ...extra];
+  return [USD, ...fixed, ...extra];
 }
 
 interface Props {
@@ -48,22 +49,23 @@ export default function CopyJobPostDialog({ job, phpPerUsd }: Props) {
   const [open, setOpen] = useState(false);
   const [platform, setPlatform] = useState<JobPostPlatform>('general');
   const [workHours, setWorkHours] = useState('');
-  const [countries, setCountries] = useState<Country[]>(DEFAULT_COUNTRIES);
-  const [countryName, setCountryName] = useState('Philippines');
+  const [countries, setCountries] = useState<Country[]>(orderCountries([]));
+  const [countryName, setCountryName] = useState(USD.country);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
   const [addError, setAddError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const country = countries.find((c) => c.country === countryName) ?? DEFAULT_COUNTRIES[0];
+  const country = countries.find((c) => c.country === countryName) ?? USD;
+  const isUsd = country.currency === 'USD';
   const isPhp = country.currency === 'PHP';
-  const { rate: otherRate, known } = useExchangeRate(country.currency, open && platform === 'indeed' && !isPhp);
-  const perUsd = isPhp ? phpPerUsd : known ? otherRate : 0;
+  const { rate: otherRate, known } = useExchangeRate(country.currency, open && platform === 'indeed' && !isPhp && !isUsd);
+  const perUsd = isUsd ? 1 : isPhp ? phpPerUsd : known ? otherRate : 0;
 
   useEffect(() => {
     if (!open) return;
-    setCountryName('Philippines');
+    setCountryName(USD.country);
     setAdding(false);
     let cancelled = false;
     supabase.from('job_post_countries').select('country, currency, symbol').then(({ data }) => {
@@ -167,7 +169,7 @@ export default function CopyJobPostDialog({ job, phpPerUsd }: Props) {
               <SelectContent>
                 {countries.map((c) => (
                   <SelectItem key={c.country} value={c.country}>
-                    {c.country} ({c.currency}{c.symbol ? `, ${c.symbol}` : ''})
+                    {c.currency === 'USD' ? c.country : `${c.country} (${c.currency}${c.symbol ? `, ${c.symbol}` : ''})`}
                   </SelectItem>
                 ))}
                 <SelectItem value={ADD}>+ Add country</SelectItem>

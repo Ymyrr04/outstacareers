@@ -77,6 +77,9 @@ const roundMonthly = (n: number, perUsd: number) => {
 
 /** Monthly estimate in a chosen country's currency; Philippines keeps the existing peso output. */
 export function countryPayRate(job: JobPostInput, country: PayCountry): string {
+  if (country.currency.toUpperCase() === 'USD') {
+    return (job.rate_min != null ? formatUsdRate(job) : job.rate || null) || 'Competitive compensation';
+  }
   if (country.currency.toUpperCase() === 'PHP') {
     return displayJobRate(job, true, country.perUsd) || 'Competitive compensation';
   }
