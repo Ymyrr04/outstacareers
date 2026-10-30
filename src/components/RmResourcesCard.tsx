@@ -18,8 +18,8 @@ async function extractText(file: File): Promise<string> {
   const name = file.name.toLowerCase();
   const buf = await file.arrayBuffer();
   if (name.endsWith('.pdf')) {
-    const pdfjs: any = await import('pdfjs-dist');
-    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdfjs: any = (await import('@/lib/pdfjs')).default;
+
     const doc = await pdfjs.getDocument({ data: buf }).promise;
     const parts: string[] = [];
     for (let i = 1; i <= doc.numPages; i++) {

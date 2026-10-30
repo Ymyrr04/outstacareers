@@ -287,7 +287,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
       // Use PDF.js for proper PDF text extraction
       try {
         // Import pdfjs-dist correctly for v3.x
-        const pdfjs = await import('pdfjs-dist');
+        const pdfjs: any = (await import('@/lib/pdfjs')).default;
+
         
         // Set up worker using the legacy build for better compatibility
         pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
