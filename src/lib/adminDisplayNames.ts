@@ -24,7 +24,7 @@ export const EMAIL_TO_AVATAR: Record<string, string> = {
   'mark@outsta.io': '/src/assets/team/mark.png',
   'liezl@outsta.io': '/src/assets/team/liezl-new.png',
   'sean@outsta.io': '/src/assets/team/sean.png',
-  'christian@outsta.io': christianAvatar.url,
+  'christian@outsta.io': new URL(christianAvatar.url, 'https://outstahub.com').href,
 };
 
 // Mapping of admin user IDs (UUIDs) to emails for lookups
