@@ -68,4 +68,7 @@ describe('countryPayRate (Indeed country selector)', () => {
   it('Philippines matches the existing peso output regardless of job region', () => {
     assert.strictEqual(countryPayRate(base, { currency: 'PHP', symbol: '₱', perUsd: 56 }), '₱44,800 - ₱56,000/month');
   });
+  it('USD - no conversion shows the hourly rate even for Philippines jobs', () => {
+    assert.strictEqual(countryPayRate({ ...base, region: 'philippines', rate_type: 'range', rate_max: 6 }, { currency: 'USD', perUsd: 1 }), '$5–$6/hour');
+  });
 });
