@@ -1,4 +1,6 @@
-import { DEFAULT_PHP_RATE, displayJobRate, usesPhpConversion, type JobPay } from './jobRate';
+import {
+  DEFAULT_PHP_RATE, displayJobRate, formatUsdRate, hoursRange, parseLegacyUsdHourly, usesPhpConversion, type JobPay,
+} from './jobRate';
 
 export type JobPostPlatform = 'general' | 'indeed' | 'facebook' | 'threads' | 'linkedin';
 
@@ -15,6 +17,14 @@ export interface JobPostInput extends JobPay {
 export interface JobPostOptions {
   workHours?: string;
   phpPerUsd?: number;
+  /** Indeed only: show the monthly estimate in this country's currency. */
+  country?: PayCountry;
+}
+
+export interface PayCountry {
+  currency: string;
+  symbol?: string | null;
+  perUsd: number;
 }
 
 export interface JobPost {
@@ -60,6 +70,35 @@ export function jobPostRate(job: JobPostInput, phpPerUsd = DEFAULT_PHP_RATE): st
   return displayJobRate(job, usesPhpConversion(job.region), phpPerUsd) || 'Competitive compensation';
 }
 
+const roundMonthly = (n: number, perUsd: number) => {
+  const step = perUsd > 1000 ? 10000 : 100;
+  return Math.round(n / step) * step;
+};
+
+/** Monthly estimate in a chosen country's currency; Philippines keeps the existing peso output. */
+export function countryPayRate(job: JobPostInput, country: PayCountry): string {
+  if (country.currency.toUpperCase() === 'PHP') {
+    return displayJobRate(job, true, country.perUsd) || 'Competitive compensation';
+  }
+  let lo: number | null = null;
+  let hi: number | null = null;
+  let hours = hoursRange(job.hours_option);
+  if (job.rate_min != null && Number.isFinite(Number(job.rate_min))) {
+    lo = Number(job.rate_min);
+    hi = job.rate_type === 'range' && job.rate_max != null ? Number(job.rate_max) : lo;
+  } else if (job.rate) {
+    lo = hi = parseLegacyUsdHourly(job.rate);
+    hours = null; // old jobs have no stored hours
+  }
+  const usd = job.rate_min != null ? formatUsdRate(job) : job.rate || null;
+  if (lo == null || hi == null || !hours || !(country.perUsd > 0)) return usd || 'Competitive compensation';
+  const min = roundMonthly(lo * hours[0] * 4 * country.perUsd, country.perUsd);
+  const max = roundMonthly(hi * hours[1] * 4 * country.perUsd, country.perUsd);
+  const f = (n: number) =>
+    country.symbol ? `${country.symbol}${n.toLocaleString('en-US')}` : `${country.currency.toUpperCase()} ${n.toLocaleString('en-US')}`;
+  return min === max ? `${f(min)}/month` : `${f(min)} - ${f(max)}/month`;
+}
+
 interface Parts {
   title: string;
   description: string;
@@ -70,14 +109,14 @@ interface Parts {
   workHours: string;
 }
 
-function parts(job: JobPostInput, opts: JobPostOptions): Parts {
+function parts(job: JobPostInput, opts: JobPostOptions, platform: JobPostPlatform): Parts {
   return {
     title: job.title.trim(),
     description: stripHtml(job.description),
     responsibilities: clean(job.responsibilities),
     qualifications: clean(job.qualifications),
     link: jobApplyLink(job),
-    rate: jobPostRate(job, opts.phpPerUsd),
+    rate: platform === 'indeed' && opts.country ? countryPayRate(job, opts.country) : jobPostRate(job, opts.phpPerUsd),
     workHours: (opts.workHours ?? '').trim(),
   };
 }
@@ -142,7 +181,7 @@ function threads(p: Parts, limit: number): string {
 }
 
 export function buildJobPost(platform: JobPostPlatform, job: JobPostInput, opts: JobPostOptions = {}): JobPost {
-  const p = parts(job, opts);
+  const p = parts(job, opts, platform);
   const charLimit = CHAR_LIMITS[platform];
   switch (platform) {
     case 'threads':
