@@ -72,3 +72,14 @@ describe('countryPayRate (Indeed country selector)', () => {
     assert.strictEqual(countryPayRate({ ...base, region: 'philippines', rate_type: 'range', rate_max: 6 }, { currency: 'USD', perUsd: 1 }), '$5–$6/hour');
   });
 });
+
+describe('Indeed rate disclaimer', () => {
+  const j = { id: 'x', title: 'T', rate_type: 'fixed', rate_min: 5, rate_max: 5, hours_option: '40-50', region: 'latam' };
+  it('shows under a converted rate', () => {
+    const t = buildJobPost('indeed', j, { country: { currency: 'COP', perUsd: 3164 } }).text;
+    assert.ok(t.includes('/month\nNote: This estimate uses the exchange rate'));
+  });
+  it('hidden for USD', () => {
+    assert.ok(!buildJobPost('indeed', j, { country: { currency: 'USD', perUsd: 1 } }).text.includes('Note: This estimate'));
+  });
+});
