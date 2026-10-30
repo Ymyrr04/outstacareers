@@ -69,14 +69,14 @@ export default function CopyJobPostDialog({ job, phpPerUsd }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline">
-          <Copy className="h-4 w-4 mr-2" />
-          Copy job post
+        <Button type="button" variant="outline" size="sm">
+          <Copy className="h-4 w-4 mr-1" />
+          Copy to Job Boards
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Copy job post</DialogTitle>
+          <DialogTitle>Copy to Job Boards</DialogTitle>
         </DialogHeader>
         <Tabs value={platform} onValueChange={(v) => setPlatform(v as JobPostPlatform)}>
           <TabsList className="grid w-full grid-cols-5">

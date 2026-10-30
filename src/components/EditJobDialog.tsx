@@ -25,7 +25,6 @@ import { buildJobPay, DEFAULT_RATE_FORM, rateFormFromJob, type RateFormValue } f
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 import { formatDateTime } from "@/lib/dateFormat";
-import CopyJobPostDialog from '@/components/CopyJobPostDialog';
 
 interface AdminUser {
   user_id: string;
@@ -575,26 +574,6 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
           />
 
           <div className="flex justify-end gap-3 pt-4">
-            <CopyJobPostDialog
-              phpPerUsd={phpRate}
-              job={(() => {
-                const pay = buildJobPay(rateForm, formData.region, phpRate, job.rate_min == null ? job.rate : null);
-                const v = pay.ok ? pay.value : null;
-                return {
-                  id: job.id,
-                  title: formData.title,
-                  description: formData.description,
-                  responsibilities: formData.responsibilities,
-                  qualifications: formData.qualifications,
-                  region: formData.region,
-                  rate: v?.rate ?? null,
-                  rate_type: v?.rate_type,
-                  rate_min: v?.rate_min ?? null,
-                  rate_max: v?.rate_max ?? null,
-                  hours_option: v?.hours_option,
-                };
-              })()}
-            />
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>

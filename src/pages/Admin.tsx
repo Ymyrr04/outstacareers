@@ -16,8 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
+import CopyJobPostDialog from '@/components/CopyJobPostDialog';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon, ChevronRight, Copy } from 'lucide-react';
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
 
 import { ContractsManager } from '@/components/contracts/ContractsManager';
@@ -140,6 +142,10 @@ interface Job {
   qualifications: string[] | null;
   responsibilities: string[] | null;
   assigned_admin_id: string | null;
+  rate_type?: string | null;
+  rate_min?: number | null;
+  rate_max?: number | null;
+  hours_option?: string | null;
 }
 
 interface ToolMatch {
@@ -383,6 +389,7 @@ const Admin = () => {
   const [jobRegionFilter, setJobRegionFilter] = useState<string>('all');
   const [jobAdminFilter, setJobAdminFilter] = useState<string>('all');
   const [jobStatusFilter, setJobStatusFilter] = useState<string>('active');
+  const { rate: phpRate } = useExchangeRate();
   
   // Applicants admin filter state
   const [applicantAdminFilter, setApplicantAdminFilter] = useState<string>('all');
@@ -2162,6 +2169,22 @@ const Admin = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          <CopyJobPostDialog
+                            job={{
+                              id: job.id,
+                              title: job.title,
+                              description: job.description,
+                              responsibilities: job.responsibilities,
+                              qualifications: job.qualifications,
+                              region: job.region,
+                              rate: job.rate,
+                              rate_type: job.rate_type,
+                              rate_min: job.rate_min,
+                              rate_max: job.rate_max,
+                              hours_option: job.hours_option,
+                            }}
+                            phpPerUsd={phpRate}
+                          />
                           <Button
                             variant="outline"
                             size="sm"
