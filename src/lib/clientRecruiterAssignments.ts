@@ -15,7 +15,7 @@ export function countClientRecruiterAssignments(
   for (const request of requests) {
     if (!activeStages.includes(request.pipeline_stage)) continue;
     const email = request.assigned_admin_id ? adminEmails.get(request.assigned_admin_id) : undefined;
-    if (email && Object.hasOwn(counts, email)) counts[email] += 1;
+    if (email && email in counts) counts[email] += 1;
   }
   return counts;
 }
