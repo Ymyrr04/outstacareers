@@ -1,4 +1,3 @@
-import { generateJobUrl } from './slugify';
 import { DEFAULT_PHP_RATE, displayJobRate, usesPhpConversion, type JobPay } from './jobRate';
 
 export type JobPostPlatform = 'general' | 'indeed' | 'facebook' | 'threads' | 'linkedin';
@@ -54,8 +53,8 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const clean = (items?: string[] | null) => (items ?? []).map((s) => stripHtml(s)).filter(Boolean);
 const bullets = (items: string[]) => items.map((i) => `• ${i}`).join('\n');
 
-export const jobApplyLink = (job: Pick<JobPostInput, 'id' | 'title'>) =>
-  `https://outstahub.com${generateJobUrl(job.title, job.id)}`;
+export const jobApplyLink = (job: Pick<JobPostInput, 'id'>) =>
+  `https://outstahub.com/job/${job.id}`;
 
 export function jobPostRate(job: JobPostInput, phpPerUsd = DEFAULT_PHP_RATE): string {
   return displayJobRate(job, usesPhpConversion(job.region), phpPerUsd) || 'Competitive compensation';

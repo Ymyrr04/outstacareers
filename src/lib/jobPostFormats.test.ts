@@ -11,7 +11,7 @@ const job = {
   rate: '$5/hr',
   region: 'global',
 };
-const link = 'https://outstahub.com/jobs/outsta/executive-assistant/abc-123';
+const link = 'https://outstahub.com/job/abc-123';
 
 describe('buildJobPost', () => {
   it('general layout follows the required order', () => {
