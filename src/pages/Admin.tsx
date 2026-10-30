@@ -142,6 +142,10 @@ interface Job {
   qualifications: string[] | null;
   responsibilities: string[] | null;
   assigned_admin_id: string | null;
+  rate_type?: string | null;
+  rate_min?: number | null;
+  rate_max?: number | null;
+  hours_option?: string | null;
 }
 
 interface ToolMatch {
