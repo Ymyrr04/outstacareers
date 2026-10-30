@@ -25,7 +25,6 @@ import { buildJobPay, DEFAULT_RATE_FORM, rateFormFromJob, type RateFormValue } f
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 import { formatDateTime } from "@/lib/dateFormat";
-import CopyJobPostDialog from '@/components/CopyJobPostDialog';
 
 interface AdminUser {
   user_id: string;
