@@ -8,8 +8,9 @@ const namespace = pdfjsNamespace as unknown as {
   default?: typeof pdfjsNamespace;
 };
 
-const pdfjsLib: typeof pdfjsNamespace =
-  namespace.GlobalWorkerOptions ? namespace : (namespace.default ?? namespace);
+const pdfjsLib =
+  (namespace.GlobalWorkerOptions ? namespace : (namespace.default ?? namespace)) as typeof pdfjsNamespace;
+
 
 // Set up the PDF.js worker once for every consumer.
 if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
