@@ -168,10 +168,13 @@ function indeedHtml(p: Parts): string {
     '<p><strong>Important:</strong></p>',
     list(['Upload your Updated CV', 'Upload your CV in PDF Format and in English']),
   );
-  const details = ['Work Arrangement: Full-Time Independent Contractor', `Rate: ${p.rate}`];
+  const details = [
+    '<strong>Work Arrangement:</strong> Full-Time Independent Contractor',
+    `<strong>Rate:</strong> ${esc(p.rate)}`,
+  ];
   if (p.rateNote) details.push(p.rateNote);
-  if (p.workHours) details.push(`Work Hours: ${p.workHours}`);
-  details.push('Location: Remote');
+  if (p.workHours) details.push(`<strong>Work Hours:</strong> ${esc(p.workHours)}`);
+  details.push('<strong>Location:</strong> Remote');
   out.push(`<p>${details.map(esc).join('<br>')}</p>`);
   return out.join('\n');
 }
