@@ -3384,6 +3384,30 @@ export type Database = {
           },
         ]
       }
+      job_post_countries: {
+        Row: {
+          country: string
+          created_at: string
+          currency: string
+          id: string
+          symbol: string | null
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          currency: string
+          id?: string
+          symbol?: string | null
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          symbol?: string | null
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           apply_url: string | null
