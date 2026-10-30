@@ -109,7 +109,18 @@ interface Parts {
   qualifications: string[];
   link: string;
   rate: string;
+  rateNote: string;
   workHours: string;
+}
+
+export const RATE_DISCLAIMER =
+  'Note: This estimate uses the exchange rate at the time this role was posted and may change with the current US dollar value.';
+
+function indeedRate(job: JobPostInput, opts: JobPostOptions, platform: JobPostPlatform) {
+  if (platform !== 'indeed' || !opts.country) return { rate: jobPostRate(job, opts.phpPerUsd), rateNote: '' };
+  const rate = countryPayRate(job, opts.country);
+  const converted = opts.country.currency.toUpperCase() !== 'USD' && rate.endsWith('/month');
+  return { rate, rateNote: converted ? RATE_DISCLAIMER : '' };
 }
 
 function parts(job: JobPostInput, opts: JobPostOptions, platform: JobPostPlatform): Parts {
@@ -119,7 +130,7 @@ function parts(job: JobPostInput, opts: JobPostOptions, platform: JobPostPlatfor
     responsibilities: clean(job.responsibilities),
     qualifications: clean(job.qualifications),
     link: jobApplyLink(job),
-    rate: platform === 'indeed' && opts.country ? countryPayRate(job, opts.country) : jobPostRate(job, opts.phpPerUsd),
+    ...indeedRate(job, opts, platform),
     workHours: (opts.workHours ?? '').trim(),
   };
 }
@@ -135,6 +146,7 @@ function longForm(p: Parts, description: string, emoji: boolean): string[] {
   );
   blocks.push(`${h('⚠️', 'Important:')}\n• Upload your Updated CV\n• Upload your CV in PDF Format and in English`);
   const details = ['Work Arrangement: Full-Time Independent Contractor', `Rate: ${p.rate}`];
+  if (p.rateNote) details.push(p.rateNote);
   if (p.workHours) details.push(`Work Hours: ${p.workHours}`);
   details.push('Location: Remote');
   blocks.push(details.join('\n'));
@@ -157,6 +169,7 @@ function indeedHtml(p: Parts): string {
     list(['Upload your Updated CV', 'Upload your CV in PDF Format and in English']),
   );
   const details = ['Work Arrangement: Full-Time Independent Contractor', `Rate: ${p.rate}`];
+  if (p.rateNote) details.push(p.rateNote);
   if (p.workHours) details.push(`Work Hours: ${p.workHours}`);
   details.push('Location: Remote');
   out.push(`<p>${details.map(esc).join('<br>')}</p>`);
