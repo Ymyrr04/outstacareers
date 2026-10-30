@@ -1,3 +1,5 @@
+import christianAvatar from '@/assets/team/christian.png.asset.json';
+
 // Mapping of admin emails to display names
 export const EMAIL_TO_NAME: Record<string, string> = {
   'czarina@outsta.io': 'Czarina',
@@ -22,6 +24,7 @@ export const EMAIL_TO_AVATAR: Record<string, string> = {
   'mark@outsta.io': '/src/assets/team/mark.png',
   'liezl@outsta.io': '/src/assets/team/liezl-new.png',
   'sean@outsta.io': '/src/assets/team/sean.png',
+  'christian@outsta.io': christianAvatar.url,
 };
 
 // Mapping of admin user IDs (UUIDs) to emails for lookups

@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Add Christian's uploaded admin photo across the client pipeline and include him in role-assignment counts; verify counts and loaded photo.
 - [x] Add a per-announcement must-read toggle; verified real admin draft save/readback, mandatory contractor confirmation with blocked Escape/outside closing, general dismissal and remembered reads after reload; temporary sample removed, seven tests passed and build/runtime checks clean.
 - [x] Fix announcement attachment downloads without opening a blocked external file page; verified the private contractor download saves the real 1,180,844-byte PDF, rendered its first page, stays in the portal with no runtime errors; five tests passed and build clean.
 - [x] Improve announcement readability with matching editor, draft and portal typography; preserved saved wording and image placement, verified real contractor reread with 16px text, 27.2px line height and loaded 500px image; five tests passed and build clean.
