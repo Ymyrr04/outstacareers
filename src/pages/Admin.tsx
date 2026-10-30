@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon, ChevronRight, Copy } from 'lucide-react';
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
 
 import { ContractsManager } from '@/components/contracts/ContractsManager';
@@ -383,6 +383,7 @@ const Admin = () => {
   const [jobRegionFilter, setJobRegionFilter] = useState<string>('all');
   const [jobAdminFilter, setJobAdminFilter] = useState<string>('all');
   const [jobStatusFilter, setJobStatusFilter] = useState<string>('active');
+  const { rate: phpRate } = useExchangeRate();
   
   // Applicants admin filter state
   const [applicantAdminFilter, setApplicantAdminFilter] = useState<string>('all');
@@ -2162,6 +2163,22 @@ const Admin = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          <CopyJobPostDialog
+                            job={{
+                              id: job.id,
+                              title: job.title,
+                              description: job.description,
+                              responsibilities: job.responsibilities,
+                              qualifications: job.qualifications,
+                              region: job.region,
+                              rate: job.rate,
+                              rate_type: job.rate_type,
+                              rate_min: job.rate_min,
+                              rate_max: job.rate_max,
+                              hours_option: job.hours_option,
+                            }}
+                            phpPerUsd={phpRate}
+                          />
                           <Button
                             variant="outline"
                             size="sm"
